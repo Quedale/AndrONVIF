@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.18.1)
 
-project("AndrONVIF" LANGUAGES C CXX)
+project("andronvif" LANGUAGES C CXX)
 
 if(NOT DEFINED GSTREAMER_ROOT_ANDROID)
     set(GSTREAMER_ROOT_ANDROID "${CMAKE_CURRENT_SOURCE_DIR}/subprojects/gstreamer-1.0-android-universal-1.26.5")
@@ -23,7 +23,9 @@ if(ret GREATER "0")
 endif()
 
 #Define library
-add_library(andronvif SHARED andronvif.c)
+add_library(${CMAKE_PROJECT_NAME} SHARED andronvif.c)
+
+target_link_options(${CMAKE_PROJECT_NAME} PRIVATE "-Wl,-z,max-page-size=16384")
 
 #########################################
 # Gstreamre specific config
@@ -49,13 +51,13 @@ set(GSTREAMER_PLUGINS         coreelements)
 find_library(LOG_LIB log REQUIRED)
 find_package(GStreamerMobile COMPONENTS ${GSTREAMER_PLUGINS} fonts REQUIRED)
 
-target_link_libraries(andronvif
+target_link_libraries(${CMAKE_PROJECT_NAME}
     PUBLIC
         GStreamer::mobile
         ${ANDROID_LIB}
         ${LOG_LIB}
 )
-set_target_properties(andronvif
+set_target_properties(${CMAKE_PROJECT_NAME}
     PROPERTIES
         C_VISIBILITY_PRESET hidden
         CXX_VISIBILITY_PRESET hidden
