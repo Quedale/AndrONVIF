@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">AndrONVIF</string>
+    <string name="player_fragment_label">Player Fragment</string>
+    <string name="device_list_fragment_label">Device List Fragment</string>
+    <string name="device_discovery_fragment_label">Device Discovery Fragment</string>
+    <string name="add_device_fragment_label">Add Device</string>
 </resources>

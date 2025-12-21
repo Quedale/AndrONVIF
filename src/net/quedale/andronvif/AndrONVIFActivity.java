@@ -1,40 +1,27 @@
 package net.quedale.andronvif;
 
-import android.app.Activity;
 import android.os.Bundle;
-import android.widget.TextView;
-import android.widget.Toast;
+import android.util.Log;
 
-import net.quedale.andronvif.R;
+import androidx.appcompat.app.AppCompatActivity;
 
-import org.freedesktop.gstreamer.GStreamer;
+import net.quedale.andronvif.databinding.MainBinding;
 
-public class AndrONVIFActivity extends Activity {
+import dalvik.annotation.optimization.FastNative;
+
+public class AndrONVIFActivity extends AppCompatActivity {
+    @FastNative
     private native String nativeGetGStreamerInfo();
 
-    // Called when the activity is first created.
     @Override
     public void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
+        Log.d("AndrONVIFActivity", "onCreate");
 
-        try {
-            GStreamer.init(this);
-        } catch (Exception e) {
-            Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
-            finish();
-            return;
-        }
-
-        setContentView(R.layout.main);
-
-        TextView tv = (TextView)findViewById(R.id.textview_info);
-        tv.setText("Welcome to " + nativeGetGStreamerInfo() + " !");
-    }
-
-    static {
-        System.loadLibrary("gstreamer_android");
-        System.loadLibrary("andronvif");
+        MainBinding binding = MainBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+        Log.d(AndrONVIFApplication.class.getSimpleName(),nativeGetGStreamerInfo());
     }
 
 }

@@ -1,12 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+        package="net.quedale.andronvif"
       android:versionCode="1"
       android:versionName="1.0">
 
-    <application android:label="@string/app_name"
-                 android:icon="@drawable/gstreamer_logo_1">
+    <!-- This permission is required to discover or connect to cameras -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+                android:name="net.quedale.andronvif.AndrONVIFApplication"
+                 android:label="@string/app_name"
+                 android:icon="@drawable/gstreamer_logo_1"
+                 android:theme="@style/Theme.AndrONVIF">
         <activity android:name="net.quedale.andronvif.AndrONVIFActivity"
-                  android:label="@string/app_name"
                   android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
