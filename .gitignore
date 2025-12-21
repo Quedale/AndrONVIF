@@ -2,6 +2,9 @@
 src/assets/fontconfig/fonts
 src/assets/fontconfig/fonts.conf
 src/org/freedesktop/gstreamer/GStreamer.java
+src/org/freedesktop/gstreamer/GstAhcCallback.java
+src/org/freedesktop/gstreamer/GstAhsCallback.java
+src/org/freedesktop/gstreamer/GstAmcOnFrameAvailableListener.java
 jni/subprojects
 .gradle
 gradle

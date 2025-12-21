@@ -5,14 +5,13 @@ project("andronvif" LANGUAGES C CXX)
 if(NOT DEFINED SUBPROJECTS_ROOT)
     set(SUBPROJECTS_ROOT "${CMAKE_SOURCE_DIR}/subprojects")
 endif()
-if(NOT DEFINED GSTREAMER_ROOT_ANDROID)
-    set(GSTREAMER_ROOT_ANDROID "${SUBPROJECTS_ROOT}/gstreamer-android")
-endif()
-
 
 #########################################
 # Gstreamer specific config
 #########################################
+if(NOT DEFINED GSTREAMER_ROOT_ANDROID)
+    set(GSTREAMER_ROOT_ANDROID "${SUBPROJECTS_ROOT}/gstreamer-android")
+endif()
 if(ANDROID_ABI STREQUAL "armeabi")
     set(GSTREAMER_ROOT "${GSTREAMER_ROOT_ANDROID}/arm")
 elseif(ANDROID_ABI STREQUAL "armeabi-v7a")
@@ -59,17 +58,20 @@ endif()
 
 
 list(APPEND CMAKE_MODULE_PATH "${GSTREAMER_ROOT}/share/cmake")
-
 set(GSTREAMER_NDK_BUILD_PATH  "${GSTREAMER_ROOT}/share/gst-android/ndk-build/")
-set(GSTREAMER_PLUGINS         coreelements)
+include("${GSTREAMER_NDK_BUILD_PATH}/plugins.cmake")
+set(GSTREAMER_PLUGINS         ${GSTREAMER_PLUGINS_CORE} ${GSTREAMER_PLUGINS_PLAYBACK} ${GSTREAMER_PLUGINS_CODECS} ${GSTREAMER_PLUGINS_NET} ${GSTREAMER_PLUGINS_SYS})
+set(GStreamer_EXTRA_DEPS gstreamer-video-1.0)
+set(G_IO_MODULES openssl)
 find_library(LOG_LIB log REQUIRED)
+find_library(ANDROID_LIB android REQUIRED)
 find_package(GStreamerMobile COMPONENTS ${GSTREAMER_PLUGINS} fonts REQUIRED)
-
 
 #Define library
 add_library(${CMAKE_PROJECT_NAME} SHARED
         andronvif.c
         andronvif_device.c
+        andronvif_player.c
         onvif_discovery_service.c
         onvif_probmatch.c)
 
@@ -104,7 +106,7 @@ target_include_directories(${CMAKE_PROJECT_NAME}
 )
 
 target_link_libraries(${CMAKE_PROJECT_NAME}
-    PRIVATE
+    PUBLIC
     cutils
     libntlm
     glib
