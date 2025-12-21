@@ -5,6 +5,7 @@ import net.quedale.andronvif.utils.AbstractModel;
 
 public class AddDeviceModel extends AbstractModel<AddDeviceModel.State> {
     public enum State {
+        INITIALIZING,
         AUTHENTICATING,
         DONE
     }

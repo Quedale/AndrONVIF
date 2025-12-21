@@ -1,5 +1,8 @@
 package net.quedale.andronvif.adddevice;
 
+import static android.view.View.INVISIBLE;
+import static android.view.View.VISIBLE;
+
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -80,9 +83,11 @@ public class AddDeviceFragment extends Fragment {
             Log.d(AddDeviceFragment.class.getSimpleName()," New State " + newstate);
             switch(newstate){
                 case AUTHENTICATING:
+                    binding.loadingOverlay.setVisibility(VISIBLE);
                     //TODO Show loading
                     break;
                 case DONE:
+                    binding.loadingOverlay.setVisibility(INVISIBLE);
                     switch(controller.getModel().getFault()){
                         case SOAP_FAULT_NONE:
                             AddDeviceFragmentDirections.ActionAddDeviceFragmentToPlayerFragment action = AddDeviceFragmentDirections.actionAddDeviceFragmentToPlayerFragment(controller.getModel().getDevice());
@@ -128,5 +133,12 @@ public class AddDeviceFragment extends Fragment {
         Log.d(AddDeviceFragment.class.getSimpleName(),"onDestroyView");
         controller.getModel().cleanup();
         super.onDestroyView();
+    }
+
+    @Override
+    public void onStop() {
+        Log.d(AddDeviceFragment.class.getSimpleName(),"onStop");
+        controller.stop();
+        super.onStop();
     }
 }

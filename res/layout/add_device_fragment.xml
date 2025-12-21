@@ -1,113 +1,138 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <androidx.core.widget.NestedScrollView
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-            xmlns:app="http://schemas.android.com/apk/res-auto"
-            xmlns:tools="http://schemas.android.com/tools"
+        <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:padding="@dimen/top_padding">
+            android:layout_height="match_parent">
 
-            <com.google.android.material.textfield.TextInputLayout
+            <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:app="http://schemas.android.com/apk/res-auto"
+                xmlns:tools="http://schemas.android.com/tools"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Hostname/IP"
-                android:id="@+id/layouthostname"
-                app:layout_constraintBottom_toTopOf="@+id/chckproto"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent">
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/txthostname"
+                android:layout_height="match_parent"
+                android:padding="@dimen/top_padding">
+
+                <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="textVisiblePassword"/>
-            </com.google.android.material.textfield.TextInputLayout>
+                    android:hint="Hostname/IP"
+                    android:id="@+id/layouthostname"
+                    app:layout_constraintBottom_toTopOf="@+id/chckproto"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/txthostname"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textVisiblePassword"/>
+                </com.google.android.material.textfield.TextInputLayout>
 
-            <CheckBox
-                android:id="@+id/chckproto"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="HTTPS"
-                app:layout_constraintBottom_toTopOf="@+id/layoutport"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/layouthostname"/>
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Port number"
-                android:id="@+id/layoutport"
-                app:layout_constraintBottom_toTopOf="@+id/layoutuser"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/chckproto">
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/txtport"
+                <CheckBox
+                    android:id="@+id/chckproto"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="number"
-                    android:maxLength="5"/> <!-- TODO Validate port range -->
-            </com.google.android.material.textfield.TextInputLayout>
+                    android:text="HTTPS"
+                    app:layout_constraintBottom_toTopOf="@+id/layoutport"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/layouthostname"/>
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Username"
-                android:id="@+id/layoutuser"
-                app:layout_constraintBottom_toTopOf="@+id/layoutpassword"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/layoutport">
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/txtuser"
+                <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="textVisiblePassword"/>
-            </com.google.android.material.textfield.TextInputLayout>
+                    android:hint="Port number"
+                    android:id="@+id/layoutport"
+                    app:layout_constraintBottom_toTopOf="@+id/layoutuser"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/chckproto">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/txtport"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="number"
+                        android:maxLength="5"/> <!-- TODO Validate port range -->
+                </com.google.android.material.textfield.TextInputLayout>
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Port number"
-                android:id="@+id/layoutpassword"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/layoutuser">
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/txtpassword"
+                <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="textPassword"/>
-            </com.google.android.material.textfield.TextInputLayout>
-        </androidx.constraintlayout.widget.ConstraintLayout>
-    </androidx.core.widget.NestedScrollView>
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/save_btn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|start"
-        android:layout_margin="@dimen/fab_margin"
-        android:contentDescription="TODO"
-        app:srcCompat="@android:drawable/ic_menu_save" />
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/cancelbtn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_marginEnd="@dimen/fab_margin"
-        android:layout_marginBottom="16dp"
-        android:contentDescription="TODO"
-        app:srcCompat="@android:drawable/ic_menu_close_clear_cancel" />
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+                    android:hint="Username"
+                    android:id="@+id/layoutuser"
+                    app:layout_constraintBottom_toTopOf="@+id/layoutpassword"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/layoutport">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/txtuser"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textVisiblePassword"/>
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Port number"
+                    android:id="@+id/layoutpassword"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/layoutuser">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/txtpassword"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textPassword"/>
+                </com.google.android.material.textfield.TextInputLayout>
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </androidx.core.widget.NestedScrollView>
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/save_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|start"
+            android:layout_margin="@dimen/fab_margin"
+            android:contentDescription="TODO"
+            app:srcCompat="@android:drawable/ic_menu_save" />
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/cancelbtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="@dimen/fab_margin"
+            android:layout_marginBottom="16dp"
+            android:contentDescription="TODO"
+            app:srcCompat="@android:drawable/ic_menu_close_clear_cancel" />
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+    <!-- Loading overlay layout (initially hidden) -->
+    <LinearLayout
+        android:id="@+id/loading_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:background="#B3FFFFFF"
+        android:orientation="vertical"
+        android:visibility="gone">
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:indeterminate="true" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Please wait..." />
+    </LinearLayout>
+
+</FrameLayout>

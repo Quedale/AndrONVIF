@@ -16,6 +16,8 @@ public abstract class CancellableRunnable implements Runnable {
 
     @Override
     public void run() {
+        this.stopped = false;
+
         this.execute();
 
         if(this.isStopped()){
