@@ -51,7 +51,7 @@ public class AndrONVIFDevice extends JNIObject implements Serializable/*implemen
     }
 
     public void setCredentials(String username, String password){
-        AndrONVIFDevice.setCredentials(this.pointer_address,username,password);
+        setCredentials(this.pointer_address,username,password);
     }
 
     public int getPort(){

@@ -1,14 +1,23 @@
 package net.quedale.andronvif.adddevice;
 
+import android.content.Context;
 import android.util.Log;
 
+import androidx.room.Room;
+
+import net.quedale.andronvif.db.AndrONVIFDatabase;
+import net.quedale.andronvif.db.DBDevice;
+import net.quedale.andronvif.db.DBDeviceDao;
 import net.quedale.andronvif.jni.AndrONVIFDevice;
 import net.quedale.andronvif.utils.CancellableRunnable;
 
 public class AddDeviceBackgroundTask extends CancellableRunnable {
     private final AddDeviceModel model;
-    public AddDeviceBackgroundTask(AddDeviceModel model){
+    private final Context context;
+
+    public AddDeviceBackgroundTask(AddDeviceModel model, Context context){
         this.model = model;
+        this.context = context;
     }
 
     @Override
@@ -46,11 +55,16 @@ public class AddDeviceBackgroundTask extends CancellableRunnable {
         Log.d(AddDeviceController.class.getSimpleName(), "Authenticating : " + model.getUsername() + "@" + device.getUrl());
         device.setCredentials(model.getUsername(), model.getPassword());
         AndrONVIFDevice.SoapFault fault = device.authenticate();
-
-        //Set device to model only if valid
-        if(fault == AndrONVIFDevice.SoapFault.SOAP_FAULT_NONE) model.setDevice(device);
         model.setFault(fault);
 
-        //TODO Save to app settings
+        //Set device to model only if valid
+        if(fault == AndrONVIFDevice.SoapFault.SOAP_FAULT_NONE){
+            model.setDevice(device);
+            //Persisting new device
+            AndrONVIFDatabase db = Room.databaseBuilder(this.context,
+                    AndrONVIFDatabase.class, "devices").build();
+            DBDeviceDao dao = db.deviceDao();
+            dao.insertAll(new DBDevice(model.getHostname(),model.getPort(),model.isHTTPS(),model.getUsername(),model.getPassword()));
+        }
     }
 }

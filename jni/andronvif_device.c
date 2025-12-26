@@ -3,7 +3,7 @@
 #include "onvif_device.h"
 
 JNIEXPORT jlong JNICALL
-Java_net_quedale_andronvif_jni_AndrONVIFDevice_nativeNew(JNIEnv * env, jobject thiz, jstring url){
+AndrONVIFDevice__nativeNew(JNIEnv * env, jobject thiz, jstring url){
     const char * native_url = (*env)->GetStringUTFChars(env, url, 0);
     OnvifDevice * device = OnvifDevice__new((char *)native_url);
     (*env)->ReleaseStringUTFChars(env, url, native_url);
@@ -11,7 +11,7 @@ Java_net_quedale_andronvif_jni_AndrONVIFDevice_nativeNew(JNIEnv * env, jobject t
 }
 
 JNIEXPORT jstring JNICALL
-Java_net_quedale_andronvif_jni_AndrONVIFDevice_getHostname(JNIEnv * env, jobject thiz, jlong pointer){
+AndrONVIFDevice__getHostname(JNIEnv * env, jobject thiz, jlong pointer){
     OnvifDevice * device = ONVIF_DEVICE((void*)pointer);
     char * hostname = OnvifDevice__get_host(device);
     jstring *java_str = (*env)->NewStringUTF (env, hostname);
@@ -21,7 +21,7 @@ Java_net_quedale_andronvif_jni_AndrONVIFDevice_getHostname(JNIEnv * env, jobject
 }
 
 JNIEXPORT jstring JNICALL
-Java_net_quedale_andronvif_jni_AndrONVIFDevice_getProtocol(JNIEnv * env, jobject thiz, jlong pointer){
+AndrONVIFDevice__getProtocol(JNIEnv * env, jobject thiz, jlong pointer){
     OnvifDevice * device = ONVIF_DEVICE((void*)pointer);
     char * proto = OnvifDevice__get_protocol(device);
     jstring *java_str = (*env)->NewStringUTF (env, proto);
@@ -34,7 +34,7 @@ static int DEFAULT_HTTPS_PORT = 443;
 static int DEFAULT_HTTP_PORT = 80;
 
 JNIEXPORT jint JNICALL
-Java_net_quedale_andronvif_jni_AndrONVIFDevice_getPort(jlong pointer){
+AndrONVIFDevice__getPort(jlong pointer){
     OnvifDevice * device = ONVIF_DEVICE((void*)pointer);
     char * strport = OnvifDevice__get_port(device);
     jint ret = -1;
@@ -55,7 +55,7 @@ Java_net_quedale_andronvif_jni_AndrONVIFDevice_getPort(jlong pointer){
 }
 
 JNIEXPORT void JNICALL
-Java_net_quedale_andronvif_jni_AndrONVIFDevice_setCredentials(JNIEnv * env, jobject thiz, jlong pointer, jstring username, jstring password){
+AndrONVIFDevice__setCredentials(JNIEnv * env, jobject thiz, jlong pointer, jstring username, jstring password){
     const char * native_username = (*env)->GetStringUTFChars(env, username, 0);
     const char * native_password = (*env)->GetStringUTFChars(env, password, 0);
     OnvifDevice__set_credentials(ONVIF_DEVICE((void*)pointer),native_username,native_password);
@@ -64,6 +64,22 @@ Java_net_quedale_andronvif_jni_AndrONVIFDevice_setCredentials(JNIEnv * env, jobj
 }
 
 JNIEXPORT jint JNICALL
-Java_net_quedale_andronvif_jni_AndrONVIFDevice_authenticate(jlong pointer){
+AndrONVIFDevice__authenticate(jlong pointer){
     return (jint) OnvifDevice__authenticate(ONVIF_DEVICE((void*)pointer));
+}
+
+/* List of implemented native methods */
+static JNINativeMethod native_methods[] = {
+        { "nativeNew", "(Ljava/lang/String;)J",(void*)AndrONVIFDevice__nativeNew},
+        { "getHostname", "(J)Ljava/lang/String;",(void*)AndrONVIFDevice__getHostname},
+        { "getProtocol", "(J)Ljava/lang/String;", (void*) AndrONVIFDevice__getProtocol},
+        { "getPort", "(J)I", (void *) AndrONVIFDevice__getPort},
+        {"setCredentials", "(JLjava/lang/String;Ljava/lang/String;)V", (void *) AndrONVIFDevice__setCredentials},
+        {"authenticate", "(J)I", (void *) AndrONVIFDevice__authenticate}
+};
+
+/* Library initializer */
+void AndrONVIFDevice__register_jni_class(JNIEnv *env){
+    jclass klass = (*env)->FindClass (env,"net/quedale/andronvif/jni/AndrONVIFDevice");
+    (*env)->RegisterNatives (env, klass, native_methods, G_N_ELEMENTS (native_methods));
 }

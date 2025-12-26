@@ -6,6 +6,7 @@ import android.util.Log;
 import androidx.appcompat.app.AppCompatActivity;
 
 import net.quedale.andronvif.databinding.MainBinding;
+import net.quedale.andronvif.jni.AndrONVIFPlayer;
 
 public class AndrONVIFActivity extends AppCompatActivity {
 
@@ -17,6 +18,11 @@ public class AndrONVIFActivity extends AppCompatActivity {
 
         MainBinding binding = MainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        AndrONVIFPlayer.nativeInit();
+    }
 
+    protected void onDestroy() {
+        AndrONVIFPlayer.nativeFinalize();
+        super.onDestroy();
     }
 }

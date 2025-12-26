@@ -28,7 +28,6 @@ public class PlayerFragment  extends Fragment {
         binding = PlayerFragmentBinding.inflate(inflater, container, false);
 
         player = new AndrONVIFPlayer(this.requireContext());
-        player.init();
 
         return binding.getRoot();
     }
@@ -37,6 +36,8 @@ public class PlayerFragment  extends Fragment {
         if (getArguments() != null) {
             AndrONVIFDevice device = PlayerFragmentArgs.fromBundle(getArguments()).getDevice();
             Log.d(PlayerFragment.class.getSimpleName(),"Playing : " + device.getUrl());
+
+            player.setDevice(device);
 
             TextView tv = new TextView(this.requireContext());
             tv.setText("Playing device : " + device.getUrl());
@@ -50,9 +51,23 @@ public class PlayerFragment  extends Fragment {
     }
 
     @Override
+    public void onStart() {
+        super.onStart();
+        Log.d(PlayerFragment.class.getSimpleName(), "onStart");
+        player.play();
+    }
+
+    @Override
+    public void onStop() {
+        Log.d(PlayerFragment.class.getSimpleName(),"onStop");
+        player.stop();
+        super.onStop();
+    }
+
+    @Override
     public void onDestroyView() { //TODO Check if detach is better
         Log.d(DiscoveryFragment.class.getSimpleName(),"onDestroyView");
-        player.deinit();
+        player.unref();
         super.onDestroyView();
     }
 }

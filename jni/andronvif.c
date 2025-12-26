@@ -7,20 +7,25 @@
 #include "onvif_device.h"
 #include <android/log.h>
 
-JNIEXPORT void JNICALL
-Java_net_quedale_andronvif_jni_JNIObject_object_1ref(jlong pointer) {
-  C_TRACE("ref %p",(void*) pointer);
-  g_object_ref(G_OBJECT((void*) pointer));
-}
+#include "andronvif_player.h"
+#include "jniobject.h"
+#include "andronvif_device.h"
 
-JNIEXPORT void JNICALL
-Java_net_quedale_andronvif_jni_JNIObject_object_1unref(jlong pointer) {
-  C_TRACE("unref %p",(void*) pointer);
-  g_object_unref(G_OBJECT((void*) pointer));
-}
+static JavaVM *java_vm;
+/* Library initializer */
+jint JNI_OnLoad(JavaVM *vm, void *reserved) {
+    JNIEnv *env = NULL;
 
-JNIEXPORT void JNICALL
-Java_net_quedale_andronvif_jni_JNIObject_native_1free(jlong pointer) {
-  C_TRACE("free %p",(void*) pointer);  
-  free((void*) pointer);
+    java_vm = vm;
+
+    if ((*vm)->GetEnv(vm, (void**) &env, JNI_VERSION_1_4) != JNI_OK) {
+        __android_log_print (ANDROID_LOG_ERROR, "tutorial-3", "Could not retrieve JNIEnv");
+        return 0;
+    }
+
+    AndrONVIFPlayerNew__register_jni_class(env);
+    JNIObject__register_jni_class(env);
+    AndrONVIFDevice__register_jni_class(env);
+
+    return JNI_VERSION_1_4;
 }

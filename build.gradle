@@ -93,7 +93,7 @@ android {
     buildTypes {
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             sourceSets {
                 main {
                     manifest.srcFile 'AndroidManifest.xml'
@@ -122,18 +122,37 @@ android {
 }
 
 dependencies {
-    implementation 'com.google.android.material:material:1.12.0'
+    implementation 'com.google.android.material:material:1.13.0'
     implementation 'androidx.appcompat:appcompat:1.7.1'
-    implementation 'androidx.navigation:navigation-fragment:2.9.3'
-    implementation 'androidx.navigation:navigation-ui:2.9.3'
-    implementation 'androidx.work:work-runtime:2.10.3'
+    implementation 'androidx.navigation:navigation-fragment:2.9.6'
+    implementation 'androidx.navigation:navigation-ui:2.9.6'
+//    implementation 'androidx.work:work-runtime:2.10.3'
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2") // Check for the latest version
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2") // Check for the latest version
+//    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2") // Check for the latest version
+//    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2") // Check for the latest version
     // ViewModelScope and LifecycleScope (add the ktx dependencies)
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.10.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.10.0")
-    implementation 'androidx.core:core-ktx:1.17.0'
+//    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.10.0")
+//    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.10.0")
+//    implementation 'androidx.core:core-ktx:1.17.0'
 //    testImplementation 'junit:junit:4.13.2'
 //    implementation 'com.android.support:appcompat-v7:28.0.0'
+
+
+    implementation "androidx.room:room-runtime:2.8.4"
+    // If this project uses any Kotlin source, use Kotlin Symbol Processing (KSP)
+    // See KSP Quickstart to add KSP to your build
+//    ksp "androidx.room:room-compiler:$room_version"
+    // If this project only uses Java source, use the Java annotationProcessor
+    // No additional plugins are necessary
+    annotationProcessor "androidx.room:room-compiler:2.8.4"
+    // optional - RxJava2 support for Room
+//    implementation "androidx.room:room-rxjava2:$room_version"
+    // optional - RxJava3 support for Room
+//    implementation "androidx.room:room-rxjava3:$room_version"
+    // optional - Guava support for Room, including Optional and ListenableFuture
+//    implementation "androidx.room:room-guava:$room_version"
+    // optional - Test helpers
+//    testImplementation "androidx.room:room-testing:$room_version"
+    // optional - Paging 3 Integration
+//    implementation "androidx.room:room-paging:$room_version"
 }

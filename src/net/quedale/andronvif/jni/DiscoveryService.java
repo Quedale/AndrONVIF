@@ -36,7 +36,6 @@ public class DiscoveryService extends JNIObject {
     //This function is the callback from native JNI C code
     @SuppressWarnings("unused")
     private void nativeMatchCallback(Long pointer) {
-        Log.d(this.getClass().getSimpleName(), "nativeMatchCallback" + pointer);
         DiscoveryMatch match = new DiscoveryMatch(pointer);
         this.match_found_cb.matchFound(match);
     }

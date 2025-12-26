@@ -9,13 +9,13 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.fragment.NavHostFragment;
-
 import net.quedale.andronvif.R;
 import net.quedale.andronvif.databinding.DeviceListFragmentBinding;
 
 public class DeviceListFragment extends Fragment {
 
-private DeviceListFragmentBinding binding;
+    private DeviceListFragmentBinding binding;
+    private final DeviceListController controller = new DeviceListController(this);
 
     @Override
     public View onCreateView(
@@ -31,9 +31,30 @@ private DeviceListFragmentBinding binding;
         super.onViewCreated(view, savedInstanceState);
         Log.d("DeviceListFragment", "onViewCreated");
 
+        controller.getModel().observeState(getViewLifecycleOwner(), newstate -> {
+            Log.d("DeviceListFragment", "New Device list state !! : " + newstate);
+        });
+
+        controller.getModel().observeDevices(getViewLifecycleOwner(), newlist -> {
+            Log.d("DeviceListFragment", "New Device list !! : " + newlist.size());
+        });
 
         binding.fab.setOnClickListener(view1 ->
             NavHostFragment.findNavController(DeviceListFragment.this).navigate(R.id.action_DeviceListFragment_to_DeviceDiscoveryFragment)
         );
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        Log.d(DeviceListFragment.class.getSimpleName(), "onStart");
+        controller.start();
+    }
+
+    @Override
+    public void onStop() {
+        Log.d(DeviceListFragment.class.getSimpleName(),"onStop");
+        controller.stop();
+        super.onStop();
     }
 }

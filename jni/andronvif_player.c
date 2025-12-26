@@ -1,102 +1,47 @@
+#include "andronvif_player.h"
 #include <string.h>
 #include <stdint.h>
-#include <jni.h>
 #include <android/log.h>
 #include <android/native_window.h>
 #include <android/native_window_jni.h>
 #include <gst/gst.h>
 #include <gst/video/video.h>
 #include <pthread.h>
+#include "clogger.h"
+#include "onvif_device.h"
 
-GST_DEBUG_CATEGORY_STATIC (debug_category);
-#define GST_CAT_DEFAULT debug_category
+pthread_t main_thread;
+GMainContext *context = NULL;  /* GLib context used to run the main loop */
+GMainLoop *main_loop = NULL;   /* GLib main loop */
 
-/*
- * These macros provide a way to store the native pointer to CustomData, which might be 32 or 64 bits, into
- * a jlong, which is always 64 bits, without warnings.
- */
-#if GLIB_SIZEOF_VOID_P == 8
-# define GET_CUSTOM_DATA(env, thiz, fieldID) (CustomData *)(*env)->GetLongField (env, thiz, fieldID)
-# define SET_CUSTOM_DATA(env, thiz, fieldID, data) (*env)->SetLongField (env, thiz, fieldID, (jlong)data)
-#else
-# define GET_CUSTOM_DATA(env, thiz, fieldID) (CustomData *)(jint)(*env)->GetLongField (env, thiz, fieldID)
-# define SET_CUSTOM_DATA(env, thiz, fieldID, data) (*env)->SetLongField (env, thiz, fieldID, (jlong)(jint)data)
-#endif
-
-/* Structure to contain all our information, so we can pass it to callbacks */
-typedef struct _CustomData {
-    jobject app;            /* Application instance, used to call its methods. A global reference is kept. */
+typedef struct {
     GstElement *pipeline;   /* The running pipeline */
-    GMainContext *context;  /* GLib context used to run the main loop */
-    GMainLoop *main_loop;   /* GLib main loop */
-    gboolean initialized;   /* To avoid informing the UI multiple times about the initialization */
     GstElement *video_sink; /* The video sink element which receives VideoOverlay commands */
     ANativeWindow *native_window; /* The Android native window where video will be rendered */
-} CustomData;
+    gboolean initialized;   /* To avoid informing the UI multiple times about the initialization */
 
-/* These global variables cache values which are not changing during execution */
-static pthread_t gst_app_thread;
-static pthread_key_t current_jni_env;
-static JavaVM *java_vm;
-static jfieldID custom_data_field_id;
-static jmethodID set_message_method_id;
-static jmethodID on_gstreamer_initialized_method_id;
+    OnvifDevice * device;
+} AndrONVIFPlayerPrivate;
 
-/*
- * Private methods
- */
+G_DEFINE_TYPE_WITH_PRIVATE (AndrONVIFPlayer, AndrONVIFPlayer_, G_TYPE_OBJECT)
 
-/* Register this thread with the VM */
-static JNIEnv *attach_current_thread (void) {
-    JNIEnv *env;
-    JavaVMAttachArgs args;
+/* Check if all conditions are met to report GStreamer as initialized.
+ * These conditions will change depending on the application */
+static void check_initialization_complete (AndrONVIFPlayer * self) {
+    AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (self);
+    if (!priv->initialized && priv->native_window && priv->video_sink && main_loop) {
+        C_DEBUG ("Initialization complete, notifying application. native_window:%p main_loop:%p", priv->native_window, main_loop);
 
-    GST_DEBUG ("Attaching thread %p", g_thread_self ());
-    args.version = JNI_VERSION_1_4;
-    args.name = NULL;
-    args.group = NULL;
+        /* The main loop is running and we received a native window, inform the sink about it */
+        gst_video_overlay_set_window_handle (GST_VIDEO_OVERLAY (priv->video_sink), (guintptr)priv->native_window);
 
-    if ((*java_vm)->AttachCurrentThread (java_vm, &env, &args) < 0) {
-        GST_ERROR ("Failed to attach current thread");
-        return NULL;
+        priv->initialized = TRUE;
     }
-
-    return env;
-}
-
-/* Unregister this thread from the VM */
-static void detach_current_thread (void *env) {
-    GST_DEBUG ("Detaching thread %p", g_thread_self ());
-    (*java_vm)->DetachCurrentThread (java_vm);
-}
-
-/* Retrieve the JNI environment for this thread */
-static JNIEnv *get_jni_env (void) {
-    JNIEnv *env;
-
-    if ((env = pthread_getspecific (current_jni_env)) == NULL) {
-        env = attach_current_thread ();
-        pthread_setspecific (current_jni_env, env);
-    }
-
-    return env;
-}
-
-/* Change the content of the UI's TextView */
-static void set_ui_message (const gchar *message, CustomData *data) {
-    JNIEnv *env = get_jni_env ();
-    GST_DEBUG ("Setting message to: %s", message);
-    jstring jmessage = (*env)->NewStringUTF(env, message);
-    (*env)->CallVoidMethod (env, data->app, set_message_method_id, jmessage);
-    if ((*env)->ExceptionCheck (env)) {
-        GST_ERROR ("Failed to call Java method");
-        (*env)->ExceptionClear (env);
-    }
-    (*env)->DeleteLocalRef (env, jmessage);
 }
 
 /* Retrieve errors from the bus and show them on the UI */
-static void error_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
+static void error_cb (GstBus *bus, GstMessage *msg, AndrONVIFPlayer* self) {
+    AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (self);
     GError *err;
     gchar *debug_info;
     gchar *message_string;
@@ -105,243 +50,328 @@ static void error_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
     message_string = g_strdup_printf ("Error received from element %s: %s", GST_OBJECT_NAME (msg->src), err->message);
     g_clear_error (&err);
     g_free (debug_info);
-    set_ui_message (message_string, data);
+
+    //TODO Draw error on surface
+    C_FIXME("Set error message on UI : '%s'",message_string);
     g_free (message_string);
-    gst_element_set_state (data->pipeline, GST_STATE_NULL);
+    //TODO Auto-retry for certain errors
+    gst_element_set_state (priv->pipeline, GST_STATE_NULL);
 }
 
-/* Notify UI about pipeline state changes */
-static void state_changed_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
-    GstState old_state, new_state, pending_state;
-    gst_message_parse_state_changed (msg, &old_state, &new_state, &pending_state);
-    /* Only pay attention to messages coming from the pipeline, not its children */
-    if (GST_MESSAGE_SRC (msg) == GST_OBJECT (data->pipeline)) {
-        gchar *message = g_strdup_printf("State changed to %s", gst_element_state_get_name(new_state));
-        set_ui_message(message, data);
-        g_free (message);
-    }
-}
-
-/* Check if all conditions are met to report GStreamer as initialized.
- * These conditions will change depending on the application */
-static void check_initialization_complete (CustomData *data) {
-    JNIEnv *env = get_jni_env ();
-    if (!data->initialized && data->native_window && data->main_loop) {
-        GST_DEBUG ("Initialization complete, notifying application. native_window:%p main_loop:%p", data->native_window, data->main_loop);
-
-        /* The main loop is running and we received a native window, inform the sink about it */
-        gst_video_overlay_set_window_handle (GST_VIDEO_OVERLAY (data->video_sink), (guintptr)data->native_window);
-
-        (*env)->CallVoidMethod (env, data->app, on_gstreamer_initialized_method_id);
-        if ((*env)->ExceptionCheck (env)) {
-            GST_ERROR ("Failed to call Java method");
-            (*env)->ExceptionClear (env);
-        }
-        data->initialized = TRUE;
-    }
-}
-
-/* Main method for the native code. This is executed on its own thread. */
-static void *app_function (void *userdata) {
-    JavaVMAttachArgs args;
-    GstBus *bus;
-    CustomData *data = (CustomData *)userdata;
-    GSource *bus_source;
+static void
+AndrONVIFPlayer__create_pipeline(AndrONVIFPlayer* self){
+    AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (self);
     GError *error = NULL;
 
-    GST_DEBUG ("Creating pipeline in CustomData at %p", data);
-
-    /* Create our own GLib Main Context and make it the default one */
-    data->context = g_main_context_new ();
-    g_main_context_push_thread_default(data->context);
-
     /* Build pipeline */
-    data->pipeline = gst_parse_launch("videotestsrc ! videoconvert ! autovideosink", &error);
+    OnvifMediaService * mservice = OnvifDevice__get_media_service(priv->device);
+    OnvifUri * muri = OnvifMediaService__getStreamUri(mservice,0);//TODO Support profile index
+    char*  struri = OnvifUri__get_uri(muri);
+
+    C_DEBUG("Playing url : %s",struri);
+    //rtsp://192.168.1.17:554/cam/realmonitor?channel=1&subtype=0&unicast=true&proto=Onvif
+    g_object_unref(muri);
+    OnvifCredentials * creds = OnvifDevice__get_credentials(priv->device);
+    char * username = OnvifCredentials__get_username(creds);
+    char * password = OnvifCredentials__get_password(creds);
+
+    //TODO Programmaitcally construct pipeline instead of launch string
+    char launchstr[256];
+    strcpy(launchstr,"rtspsrc location=\"");
+    strcat(launchstr,struri);
+    strcat(launchstr,"\" user-id=\"");
+    strcat(launchstr, username);
+    strcat(launchstr,"\" user-pw=\"");
+    strcat(launchstr, password);
+    strcat(launchstr, "\" protocols=tcp ! decodebin3 ! videoconvert ! autovideosink");
+
+    free(username);
+    free(password);
+
+    C_DEBUG("Launch string : '%s'",launchstr);
+    priv->pipeline = gst_parse_launch(launchstr, &error);
     if (error) {
         gchar *message = g_strdup_printf("Unable to build pipeline: %s", error->message);
         g_clear_error (&error);
-        set_ui_message(message, data);
+        //TODO Draw error on surface
+        C_FIXME("Set error message on UI : Could not retrieve video sink : '%s'",message);
         g_free (message);
-        return NULL;
+        return;
     }
 
     /* Set the pipeline to READY, so it can already accept a window handle, if we have one */
-    gst_element_set_state(data->pipeline, GST_STATE_READY);
+    gst_element_set_state(priv->pipeline, GST_STATE_READY);
 
-    data->video_sink = gst_bin_get_by_interface(GST_BIN(data->pipeline), GST_TYPE_VIDEO_OVERLAY);
-    if (!data->video_sink) {
-        GST_ERROR ("Could not retrieve video sink");
-        return NULL;
+    priv->video_sink = gst_bin_get_by_interface(GST_BIN(priv->pipeline), GST_TYPE_VIDEO_OVERLAY);
+    if (!priv->video_sink) {
+        //TODO Draw error on surface
+        C_ERROR ("Set error message on UI : Could not retrieve video sink");
+        //TODO Clean up resource
+        return;
     }
 
     /* Instruct the bus to emit signals for each received message, and connect to the interesting signals */
-    bus = gst_element_get_bus (data->pipeline);
-    bus_source = gst_bus_create_watch (bus);
+    GstBus * bus = gst_element_get_bus (priv->pipeline);
+    GSource * bus_source = gst_bus_create_watch (bus);
     g_source_set_callback (bus_source, (GSourceFunc) gst_bus_async_signal_func, NULL, NULL);
-    g_source_attach (bus_source, data->context);
+    g_source_attach (bus_source, context);
     g_source_unref (bus_source);
-    g_signal_connect (G_OBJECT (bus), "message::error", (GCallback)error_cb, data);
-    g_signal_connect (G_OBJECT (bus), "message::state-changed", (GCallback)state_changed_cb, data);
+    g_signal_connect (G_OBJECT (bus), "message::error", (GCallback)error_cb, self);
+//    g_signal_connect (G_OBJECT (bus), "message::state-changed", (GCallback)state_changed_cb, data);
     gst_object_unref (bus);
 
+    check_initialization_complete (self);
+}
+
+/* Main method for the native code. This is executed on its own thread. */
+static void *
+mainloop_function (void *userdata) {
     /* Create a GLib Main Loop and set it to run */
-    GST_DEBUG ("Entering main loop... (CustomData:%p)", data);
-    data->main_loop = g_main_loop_new (data->context, FALSE);
-    check_initialization_complete (data);
-    g_main_loop_run (data->main_loop);
-    GST_DEBUG ("Exited main loop");
-    g_main_loop_unref (data->main_loop);
-    data->main_loop = NULL;
+    C_DEBUG ("Entering main loop...");
+    main_loop = g_main_loop_new (context, FALSE);
+
+    g_main_loop_run (main_loop);
+    C_DEBUG ("Exited main loop");
+    g_main_loop_unref (main_loop);
+    main_loop = NULL;
 
     /* Free resources */
-    g_main_context_pop_thread_default(data->context);
-    g_main_context_unref (data->context);
-    gst_element_set_state (data->pipeline, GST_STATE_NULL);
-    gst_object_unref (data->video_sink);
-    gst_object_unref (data->pipeline);
+    g_main_context_pop_thread_default(context);
+    g_main_context_unref (context);
 
     return NULL;
 }
 
-/*
- * Java Bindings
- */
-
-/* Instruct the native code to create its internal data structure, pipeline and thread */
-static void gst_native_init (JNIEnv* env, jobject thiz) {
-    CustomData *data = g_new0 (CustomData, 1);
-    SET_CUSTOM_DATA (env, thiz, custom_data_field_id, data);
-    GST_DEBUG_CATEGORY_INIT (debug_category, "tutorial-3", 0, "Android tutorial 3");
-    gst_debug_set_threshold_for_name("tutorial-3", GST_LEVEL_DEBUG);
-    GST_DEBUG ("Created CustomData at %p", data);
-    data->app = (*env)->NewGlobalRef (env, thiz);
-    GST_DEBUG ("Created GlobalRef for app object at %p", data->app);
-    pthread_create (&gst_app_thread, NULL, &app_function, data);
+static void
+AndrONVIFPlayer__init(AndrONVIFPlayer* self) {
+    AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (self);
+    priv->pipeline = NULL;
+    priv->video_sink = NULL;
+    priv->native_window = NULL;
+    priv->device = NULL;
 }
 
-/* Quit the main loop, remove the native thread and free resources */
-static void gst_native_finalize (JNIEnv* env, jobject thiz) {
-    CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
-    if (!data) return;
-    GST_DEBUG ("Quitting main loop...");
-    g_main_loop_quit (data->main_loop);
-    GST_DEBUG ("Waiting for thread to finish...");
-    pthread_join (gst_app_thread, NULL);
-    GST_DEBUG ("Deleting GlobalRef for app object at %p", data->app);
-    (*env)->DeleteGlobalRef (env, data->app);
-    GST_DEBUG ("Freeing CustomData at %p", data);
-    g_free (data);
-    SET_CUSTOM_DATA (env, thiz, custom_data_field_id, NULL);
-    GST_DEBUG ("Done finalizing");
-}
-
-/* Set pipeline to PLAYING state */
-static void gst_native_play (JNIEnv* env, jobject thiz) {
-    CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
-    if (!data) return;
-    GST_DEBUG ("Setting state to PLAYING");
-    gst_element_set_state (data->pipeline, GST_STATE_PLAYING);
-}
-
-/* Set pipeline to PAUSED state */
-static void gst_native_pause (JNIEnv* env, jobject thiz) {
-    CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
-    if (!data) return;
-    GST_DEBUG ("Setting state to PAUSED");
-    gst_element_set_state (data->pipeline, GST_STATE_PAUSED);
-}
-
-/* Static class initializer: retrieve method and field IDs */
-static jboolean gst_native_class_init (JNIEnv* env, jclass klass) {
-    custom_data_field_id = (*env)->GetFieldID (env, klass, "native_custom_data", "J");
-    set_message_method_id = (*env)->GetMethodID (env, klass, "setMessage", "(Ljava/lang/String;)V");
-    on_gstreamer_initialized_method_id = (*env)->GetMethodID (env, klass, "onGStreamerInitialized", "()V");
-
-    if (!custom_data_field_id || !set_message_method_id || !on_gstreamer_initialized_method_id) {
-        /* We emit this message through the Android log instead of the GStreamer log because the later
-         * has not been initialized yet.
-         */
-        __android_log_print (ANDROID_LOG_ERROR, "tutorial-3", "The calling class does not implement all necessary interface methods");
-        return JNI_FALSE;
+static JNIEXPORT void JNICALL
+AndrONVIFPlayerNew_stop(jlong pointer) {
+    g_return_if_fail(pointer > 0);
+    g_return_if_fail(ANDRONVIF_IS_PLAYER((void*)pointer));
+    AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (ANDRONVIF_PLAYER((void*)pointer));
+    if(priv->pipeline){
+        gst_element_set_state (priv->pipeline, GST_STATE_NULL);
+        gst_object_unref (priv->video_sink);
+        gst_object_unref (priv->pipeline);
+        priv->pipeline = NULL;
+        priv->video_sink = NULL;
+        priv->initialized = FALSE;
     }
-    return JNI_TRUE;
 }
 
-static void gst_native_surface_init (JNIEnv *env, jobject thiz, jobject surface) {
-    CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
-    if (!data) return;
-    ANativeWindow *new_native_window = ANativeWindow_fromSurface(env, surface);
-    GST_DEBUG ("Received surface %p (native window %p)", surface, new_native_window);
+static gboolean
+AndrONVIFPlayerNew_idle_play(AndrONVIFPlayer * self){
+    //TODO aquire lock in case user change camera too fast
+    AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (self);
+    AndrONVIFPlayer__create_pipeline(self);
+    gst_element_set_state (priv->pipeline, GST_STATE_PLAYING);
+    return FALSE;
+}
 
-    if (data->native_window) {
-        ANativeWindow_release (data->native_window);
-        if (data->native_window == new_native_window) {
-            GST_DEBUG ("New native window is the same as the previous one");
-            if (data->video_sink) {
-                gst_video_overlay_expose(GST_VIDEO_OVERLAY (data->video_sink));
-                gst_video_overlay_expose(GST_VIDEO_OVERLAY (data->video_sink));
+
+static JNIEXPORT void JNICALL
+AndrONVIFPlayerNew_play(jlong pointer) {
+    g_return_if_fail(pointer > 0);
+    g_return_if_fail(ANDRONVIF_IS_PLAYER((void*)pointer));
+
+    AndrONVIFPlayer * self = ANDRONVIF_PLAYER((void*)pointer);
+    AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (self);
+    if(priv->pipeline){
+        C_WARN("Pipeline already created");
+        return;
+    }
+
+    g_main_context_invoke(context,G_SOURCE_FUNC(AndrONVIFPlayerNew_idle_play),self);
+}
+
+JNIEXPORT void JNICALL
+AndrONVIFPlayerNew__set_device(jlong self_pointer, jlong device_pointer){
+    C_DEBUG("AndrONVIFPlayerNew__set_device");
+    g_return_if_fail(self_pointer > 0);
+    g_return_if_fail(ANDRONVIF_IS_PLAYER((void*)self_pointer));
+    g_return_if_fail(device_pointer > 0);
+    g_return_if_fail(ONVIF_IS_DEVICE((void*)device_pointer));
+
+    AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (ANDRONVIF_PLAYER((void*)self_pointer));
+    priv->device = ONVIF_DEVICE((void*)device_pointer);
+}
+
+static void
+AndrONVIFPlayer__dispose (GObject *object){
+    C_DEBUG("AndrONVIFPlayer__dispose");
+    AndrONVIFPlayer * self = ANDRONVIF_PLAYER(object);
+    AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (self);
+    AndrONVIFPlayerNew_stop((jlong)self);
+
+    G_OBJECT_CLASS (AndrONVIFPlayer__parent_class)->dispose (object);
+}
+
+static void
+AndrONVIFPlayer__class_init (AndrONVIFPlayerClass *klass){
+    GObjectClass *object_class = G_OBJECT_CLASS (klass);
+    object_class->dispose = AndrONVIFPlayer__dispose;
+
+//    if(!main_loop)
+//        pthread_create (&main_thread, NULL, &mainloop_function, NULL);
+}
+
+JNIEXPORT jlong JNICALL
+AndrONVIFPlayerNew_nativeNew() {
+    return (jlong) g_object_new (ANDRONVIF_TYPE_PLAYER, NULL);
+}
+
+
+static JNIEXPORT void JNICALL
+AndrONVIFPlayerNew_surfaceInit (JNIEnv *env, jobject thiz, jlong pointer, jobject surface) {
+    g_return_if_fail(pointer > 0);
+    g_return_if_fail(ANDRONVIF_IS_PLAYER((void*)pointer));
+
+    AndrONVIFPlayer * self = ANDRONVIF_PLAYER((void*)pointer);
+    AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (self);
+
+    ANativeWindow *new_native_window = ANativeWindow_fromSurface(env, surface);
+    C_DEBUG ("Received surface %p (native window %p)", (void*)surface, (void*)new_native_window);
+
+    if (priv->native_window) {
+        ANativeWindow_release (priv->native_window);
+        if (priv->native_window == new_native_window) {
+            C_DEBUG ("New native window is the same as the previous one");
+            if (priv->video_sink) {
+                gst_video_overlay_expose(GST_VIDEO_OVERLAY (priv->video_sink));
             }
             return;
         } else {
-            GST_DEBUG ("Released previous native window %p", data->native_window);
-            data->initialized = FALSE;
+            C_DEBUG ("Released previous native window %p", (void*)priv->native_window);
+            priv->initialized = FALSE;
         }
     }
-    data->native_window = new_native_window;
+    priv->native_window = new_native_window;
 
-    check_initialization_complete (data);
+    check_initialization_complete (self);
 }
 
-static void gst_native_surface_finalize (JNIEnv *env, jobject thiz) {
-    CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
-    if (!data) return;
-    GST_DEBUG ("Releasing Native Window %p", data->native_window);
+static JNIEXPORT void JNICALL
+AndrONVIFPlayerNew_surfaceFinalize (jlong pointer) {
+    g_return_if_fail(pointer > 0);
+    g_return_if_fail(ANDRONVIF_IS_PLAYER((void*)pointer));
 
-    if (data->video_sink) {
-        gst_video_overlay_set_window_handle (GST_VIDEO_OVERLAY (data->video_sink), (guintptr)NULL);
-        gst_element_set_state (data->pipeline, GST_STATE_READY);
+    AndrONVIFPlayer * self = ANDRONVIF_PLAYER((void*)pointer);
+    AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (self);
+    C_DEBUG ("Releasing Native Window %p", priv->native_window);
+
+    if (priv->video_sink) {
+        gst_video_overlay_set_window_handle (GST_VIDEO_OVERLAY (priv->video_sink), (guintptr)NULL);
+        gst_element_set_state (priv->pipeline, GST_STATE_READY);
     }
 
-    ANativeWindow_release (data->native_window);
-    data->native_window = NULL;
-    data->initialized = FALSE;
+    ANativeWindow_release (priv->native_window);
+    priv->native_window = NULL;
+    priv->initialized = FALSE;
 }
 
-static jstring
-gst_native_get_gstreamer_info (JNIEnv * env, jobject thiz)
-{
+void gst_print_elements_by_type(char * type){
+    GList * factories, *filtered, *tmp;
+
+    C_INFO("* %s decoders ***",type);
+    int found =0;
+    GstCaps * caps = gst_caps_new_empty_simple(type);
+    factories = gst_element_factory_list_get_elements (GST_ELEMENT_FACTORY_TYPE_DECODER | GST_ELEMENT_FACTORY_TYPE_MEDIA_VIDEO, GST_RANK_MARGINAL);
+    filtered = gst_element_factory_list_filter (factories, caps, GST_PAD_SINK, FALSE);
+    for (tmp = filtered; tmp; tmp = tmp->next) {
+        GstElementFactory *fact = (GstElementFactory *) tmp->data;
+        int rank = gst_plugin_feature_get_rank(GST_PLUGIN_FEATURE_CAST(fact));
+        char * name = gst_plugin_feature_get_name(GST_PLUGIN_FEATURE_CAST(fact));
+        C_INFO("*    %s[%d]",name,rank);
+        found = 1;
+    }
+
+    if(!found){
+        C_INFO("*    None");
+    }
+    gst_caps_unref (caps);
+    gst_plugin_feature_list_free(filtered);
+    gst_plugin_feature_list_free (factories);
+}
+
+
+static JNIEXPORT jstring JNICALL
+AndrONVIFPlayerNew_getGstreamerInfo (JNIEnv * env, jobject thiz){
     char *version_utf8 = gst_version_string ();
     jstring *version_jstring = (*env)->NewStringUTF (env, version_utf8);
     g_free (version_utf8);
     return version_jstring;
 }
 
+/* Quit the main loop, remove the native thread and free resources */
+static JNIEXPORT void JNICALL
+AndrONVIFPlayerNew_finalize () {
+    if(main_loop){
+        C_DEBUG ("Quitting main loop...");
+        g_main_loop_quit (main_loop);
+        C_DEBUG ("Waiting for thread to finish...");
+        pthread_join (main_thread, NULL);
+        main_loop = NULL;
+    } else {
+        C_DEBUG("No mainloop started.");
+    }
+}
+
+static void gst_plugin_feature_set_rank_by_name(char * element_name, int priority){
+    GstRegistry* plugins_register = gst_registry_get();
+    GstPluginFeature* plugfeat = gst_registry_lookup_feature(plugins_register, element_name);
+    if(plugfeat == NULL) {
+        C_WARN("Element '%s' not found.",element_name);
+        return;
+    }
+    int rank = gst_plugin_feature_get_rank(plugfeat);
+    if(rank > priority){
+        C_WARN("Found element '%s'. Lowering priority from %d to %d...",element_name,rank,priority);
+        gst_plugin_feature_set_rank(plugfeat, priority);
+    } else if(rank < priority){
+        C_WARN("Found element '%s'. Increasing priority from %d to %d...",element_name,rank,priority);
+        gst_plugin_feature_set_rank(plugfeat, priority);
+    }
+
+    gst_object_unref(plugfeat);
+}
+
+/* Instruct the native code to create its internal data structure, pipeline and thread */
+static void AndrONVIFPlayerNew__init (JNIEnv* env, jobject thiz) {
+    gst_plugin_feature_set_rank_by_name("amcviddec-c2goldfishhevcdecoder",GST_RANK_PRIMARY); //This one apparently doesn't support 4k
+    gst_plugin_feature_set_rank_by_name("amcviddec-c2androidhevcdecoder",GST_RANK_PRIMARY+1);
+    C_INFO("**** Video decoders *******");
+    gst_print_elements_by_type("video/x-h264");
+    gst_print_elements_by_type("video/x-h265");
+    gst_print_elements_by_type("image/jpeg");
+    gst_print_elements_by_type("video/x-av1");
+    C_INFO("****************************");
+    pthread_create (&main_thread, NULL, &mainloop_function, NULL);
+}
+
 /* List of implemented native methods */
 static JNINativeMethod native_methods[] = {
-        { "nativeInit", "()V", (void *) gst_native_init},
-        { "nativeFinalize", "()V", (void *) gst_native_finalize},
-        { "nativePlay", "()V", (void *) gst_native_play},
-        { "nativePause", "()V", (void *) gst_native_pause},
-        { "nativeSurfaceInit", "(Ljava/lang/Object;)V", (void *) gst_native_surface_init},
-        { "nativeSurfaceFinalize", "()V", (void *) gst_native_surface_finalize},
-        { "nativeClassInit", "()Z", (void *) gst_native_class_init},
-        {"nativeGetGStreamerInfo", "()Ljava/lang/String;",(void *) gst_native_get_gstreamer_info}
+        { "nativeInit", "()V", (void *) AndrONVIFPlayerNew__init},
+        {"nativeNew", "()J", (void *) AndrONVIFPlayerNew_nativeNew},
+        {"nativePlay", "(J)V", (void *) AndrONVIFPlayerNew_play},
+        {"nativeStop", "(J)V", (void *) AndrONVIFPlayerNew_stop},
+        {"setDevice", "(JJ)V", (void *) AndrONVIFPlayerNew__set_device},
+        {"getGstreamerInfo", "()Ljava/lang/String;", (void *) AndrONVIFPlayerNew_getGstreamerInfo},
+        {"surfaceFinalize", "(J)V", (void *) AndrONVIFPlayerNew_surfaceFinalize},
+        {"surfaceInit", "(JLjava/lang/Object;)V", (void *) AndrONVIFPlayerNew_surfaceInit},
+        {"nativeFinalize", "()V", (void *) AndrONVIFPlayerNew_finalize}
 };
 
 /* Library initializer */
-jint JNI_OnLoad(JavaVM *vm, void *reserved) {
-    JNIEnv *env = NULL;
+void AndrONVIFPlayerNew__register_jni_class(JNIEnv *env){
 
-    java_vm = vm;
+    jclass klass = (*env)->FindClass (env,"net/quedale/andronvif/jni/AndrONVIFPlayer");
+    (*env)->RegisterNatives (env, klass, native_methods, G_N_ELEMENTS (native_methods));
 
-    if ((*vm)->GetEnv(vm, (void**) &env, JNI_VERSION_1_4) != JNI_OK) {
-        __android_log_print (ANDROID_LOG_ERROR, "tutorial-3", "Could not retrieve JNIEnv");
-        return 0;
-    }
-    jclass klass = (*env)->FindClass (env, "net/quedale/andronvif/jni/AndrONVIFPlayer");
-    (*env)->RegisterNatives (env, klass, native_methods, G_N_ELEMENTS(native_methods));
-
-    pthread_key_create (&current_jni_env, detach_current_thread);
-
-    return JNI_VERSION_1_4;
 }

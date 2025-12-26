@@ -11,7 +11,7 @@ public class AddDeviceController extends AbstractController<AddDeviceModel, AddD
 
     public void save(){
         getModel().setState(AddDeviceModel.State.INITIALIZING);
-        task = new AddDeviceBackgroundTask(getModel());
+        task = new AddDeviceBackgroundTask(getModel(), this.getFragment().requireContext());
         AppExecutorService executor = AppExecutorService.getInstance();
         executor.execute(task);
     }

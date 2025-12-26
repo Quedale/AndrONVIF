@@ -6,11 +6,11 @@ import dalvik.annotation.optimization.CriticalNative;
 
 public abstract class JNIObject {
     @CriticalNative
-    protected static native void object_unref(long pointer);
+    private static native void object_unref(long pointer);
     @CriticalNative
-    protected static native void object_ref(long pointer);
+    private static native void object_ref(long pointer);
     @CriticalNative
-    protected static native void native_free(long pointer);
+    private static native void native_free(long pointer);
 
     protected long pointer_address;
     private int inner_ref = 1;
