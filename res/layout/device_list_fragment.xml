@@ -6,17 +6,15 @@
     android:layout_height="match_parent">
 
     <androidx.core.widget.NestedScrollView
-        xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-        <android.widget.LinearLayout
+        <GridLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:paddingLeft="16dp"
-            android:paddingRight="16dp"
-            android:id="@+id/listlayout"
-            android:orientation="vertical" >
-        </android.widget.LinearLayout>
+            android:columnCount="2"
+            android:rowCount="2"
+            android:id="@+id/gridlayout">
+        </GridLayout>
     </androidx.core.widget.NestedScrollView>
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab"

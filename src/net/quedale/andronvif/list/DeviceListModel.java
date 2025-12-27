@@ -3,7 +3,6 @@ package net.quedale.andronvif.list;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Observer;
-import androidx.lifecycle.ViewModelStoreOwner;
 
 import net.quedale.andronvif.jni.AndrONVIFDevice;
 import net.quedale.andronvif.utils.AbstractModel;
@@ -27,6 +26,18 @@ public class DeviceListModel extends AbstractModel<DeviceListModel.State> {
 
     public void observeDevices(@org.jspecify.annotations.NonNull LifecycleOwner owner, @NonNull Observer<? super List<AndrONVIFDevice>> observer){
         devices.observe(owner, observer);
+    }
+
+    void deviceRendered(AndrONVIFDevice device) {
+        rendered_devices.add(device);
+    }
+
+    boolean isDeviceRendered(AndrONVIFDevice device){
+        return rendered_devices.contains(device);
+    }
+
+    public void resetRendered(){
+        rendered_devices.clear();
     }
 
     public void setDevices(List<AndrONVIFDevice> devices){

@@ -63,10 +63,20 @@ AndrONVIFPlayer__create_pipeline(AndrONVIFPlayer* self){
     AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (self);
     GError *error = NULL;
 
+    if(!OnvifDevice__is_authenticated(priv->device)){
+        C_ERROR("Device not authenticated.");
+        return;
+    }
     /* Build pipeline */
     OnvifMediaService * mservice = OnvifDevice__get_media_service(priv->device);
     OnvifUri * muri = OnvifMediaService__getStreamUri(mservice,0);//TODO Support profile index
     char*  struri = OnvifUri__get_uri(muri);
+
+    if(!struri){
+        g_object_unref(muri);
+        C_ERROR("Unable to retrieve StreamURI.");
+        return;
+    }
 
     C_DEBUG("Playing url : %s",struri);
     //rtsp://192.168.1.17:554/cam/realmonitor?channel=1&subtype=0&unicast=true&proto=Onvif
@@ -121,6 +131,11 @@ AndrONVIFPlayer__create_pipeline(AndrONVIFPlayer* self){
     gst_object_unref (bus);
 
     check_initialization_complete (self);
+
+    if(priv->initialized)
+        gst_element_set_state (priv->pipeline, GST_STATE_PLAYING);
+    else
+        C_ERROR("Failed to initialize player");
 }
 
 /* Main method for the native code. This is executed on its own thread. */
@@ -171,7 +186,6 @@ AndrONVIFPlayerNew_idle_play(AndrONVIFPlayer * self){
     //TODO aquire lock in case user change camera too fast
     AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (self);
     AndrONVIFPlayer__create_pipeline(self);
-    gst_element_set_state (priv->pipeline, GST_STATE_PLAYING);
     return FALSE;
 }
 

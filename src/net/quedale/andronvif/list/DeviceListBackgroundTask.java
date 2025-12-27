@@ -46,7 +46,11 @@ public class DeviceListBackgroundTask extends CancellableRunnable {
             }
             builder.append("/onvif/device_service");
 
-            androdevices.add(new AndrONVIFDevice(builder.toString()));
+            //TODO Using single native constructor
+            AndrONVIFDevice newdev = new AndrONVIFDevice(builder.toString());
+            newdev.setCredentials(device.username,device.password);
+
+            androdevices.add(newdev);
 
             if(this.isStopped()){
                 for(AndrONVIFDevice androdev : androdevices){
@@ -54,6 +58,11 @@ public class DeviceListBackgroundTask extends CancellableRunnable {
                 }
                 return;
             }
+        }
+
+        //TODO do this part from individual device coroutine
+        for(AndrONVIFDevice androdev : androdevices){
+            androdev.authenticate();
         }
 
         //The loop above should be fast enough that adding device individually would be irrelevant
