@@ -1,5 +1,6 @@
 package net.quedale.andronvif.list;
 
+import androidx.annotation.MainThread;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Observer;
@@ -40,8 +41,32 @@ public class DeviceListModel extends AbstractModel<DeviceListModel.State> {
         rendered_devices.clear();
     }
 
+    @MainThread
+    public void addDevice(AndrONVIFDevice device){
+        List<AndrONVIFDevice> oldlist = devices.getValue();
+        if(oldlist != null && oldlist.contains(device)) {
+            return;
+        }
+
+        List<AndrONVIFDevice> newlist = new ArrayList<>();
+        if(oldlist != null)
+            newlist.addAll(oldlist);
+
+        newlist.add(device);
+        devices.setValue(newlist);
+    }
+
     public void setDevices(List<AndrONVIFDevice> devices){
-        //TODO support null devices?
+        if(devices == null){
+            Iterator<AndrONVIFDevice> iterator = prepost_devices.iterator();
+            while (iterator.hasNext()) {
+                AndrONVIFDevice androdev = iterator.next();
+                androdev.unref(); //This may not be safe if a view doesn't add its own reference
+                iterator.remove();
+            }
+            this.devices.postValue(new ArrayList<>());
+            return;
+        }
 
         //Clean up devices that are already rendered
         boolean was_alraady_empty = devices.isEmpty();

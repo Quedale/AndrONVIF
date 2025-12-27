@@ -12,14 +12,17 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.fragment.NavHostFragment;
 
 import net.quedale.andronvif.jni.AndrONVIFDevice;
 import net.quedale.andronvif.databinding.AddDeviceFragmentBinding;
+import net.quedale.andronvif.list.DeviceListModel;
 
 public class AddDeviceFragment extends Fragment {
     private AddDeviceFragmentBinding binding;
     private final AddDeviceController controller = new AddDeviceController(this);
+    private DeviceListModel activity_model;
 
     @Override
     public View onCreateView(
@@ -27,7 +30,7 @@ public class AddDeviceFragment extends Fragment {
             Bundle savedInstanceState
     ) {
         binding = AddDeviceFragmentBinding.inflate(inflater, container, false);
-
+        activity_model = new ViewModelProvider(this.requireActivity()).get(DeviceListModel .class);
         return binding.getRoot();
     }
 
@@ -84,12 +87,12 @@ public class AddDeviceFragment extends Fragment {
             switch(newstate){
                 case AUTHENTICATING:
                     binding.loadingOverlay.setVisibility(VISIBLE);
-                    //TODO Show loading
                     break;
                 case DONE:
                     binding.loadingOverlay.setVisibility(INVISIBLE);
                     switch(controller.getModel().getFault()){
                         case SOAP_FAULT_NONE:
+                            activity_model.addDevice(controller.getModel().getDevice());
                             AddDeviceFragmentDirections.ActionAddDeviceFragmentToPlayerFragment action = AddDeviceFragmentDirections.actionAddDeviceFragmentToPlayerFragment(controller.getModel().getDevice());
                             NavHostFragment.findNavController(AddDeviceFragment.this).navigate(action);
                             break;

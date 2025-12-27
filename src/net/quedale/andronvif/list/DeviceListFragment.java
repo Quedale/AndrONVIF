@@ -27,9 +27,17 @@ public class DeviceListFragment extends Fragment {
         binding = DeviceListFragmentBinding.inflate(inflater, container, false);
         Log.d("DeviceListFragment", "onCreateView");
 
-        //TODO Show loading
         controller.getModel().observeState(getViewLifecycleOwner(), newstate -> {
             Log.d("DeviceListFragment", "New Device list state !! : " + newstate);
+            switch(newstate){
+                case INITIALIZING:
+                case LOADING:
+                    DeviceListFragment.this.binding.dbfetchProgress.setVisibility(View.VISIBLE);
+                    break;
+                case DONE:
+                    DeviceListFragment.this.binding.dbfetchProgress.setVisibility(View.INVISIBLE);
+                    break;
+            }
         });
 
         controller.getModel().observeDevices(getViewLifecycleOwner(), newlist -> {
@@ -52,12 +60,23 @@ public class DeviceListFragment extends Fragment {
                     NavHostFragment.findNavController(DeviceListFragment.this).navigate(action);
                 });
 
-                GridLayout.Spec rowSpec = GridLayout.spec(i / 2);
-                GridLayout.Spec colSpec = GridLayout.spec(i % 2);
+                int rowindex = i / 2;
+                int colindex = i % 2;
+                GridLayout.Spec rowSpec = GridLayout.spec(rowindex);
+                GridLayout.Spec colSpec = GridLayout.spec(colindex);
                 GridLayout.LayoutParams params = new GridLayout.LayoutParams(rowSpec, colSpec);
                 params.width = 0; // Or ViewGroup.LayoutParams.WRAP_CONTENT
                 params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
                 params.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f);
+                params.rowSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f);
+
+                int grid_margin = (int) getResources().getDimension(R.dimen.grid_margin);
+                if(rowindex > 0)
+                    params.topMargin = grid_margin;
+                if(colindex == 0)
+                    params.rightMargin = grid_margin/2;
+                else
+                    params.leftMargin = grid_margin/2;
 
                 binding.gridlayout.addView(device_view,params);
 
