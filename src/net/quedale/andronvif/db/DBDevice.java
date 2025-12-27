@@ -14,7 +14,7 @@ public class DBDevice {
         this.password = password;
     }
 
-    @PrimaryKey
+    @PrimaryKey(autoGenerate = true)
     public int uid;
 
     @ColumnInfo(name = "address")

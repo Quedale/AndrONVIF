@@ -37,7 +37,7 @@ public class DeviceListBackgroundTask extends CancellableRunnable {
             if(device.tls)
                 builder.append("https://");
             else
-                builder.append("https//");
+                builder.append("http://");
 
             builder.append(device.address);
             if((device.tls && device.port != 443) || (!device.tls && device.port != 80)) {
@@ -56,7 +56,7 @@ public class DeviceListBackgroundTask extends CancellableRunnable {
             }
         }
 
-        //This loop above should be fast enough that adding device individually would be irrelevant
+        //The loop above should be fast enough that adding device individually would be irrelevant
         model.setDevices(androdevices);
     }
 

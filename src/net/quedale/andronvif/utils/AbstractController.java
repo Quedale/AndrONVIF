@@ -1,8 +1,11 @@
 package net.quedale.andronvif.utils;
 
+import android.view.View;
+
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.lifecycle.ViewModelStoreOwner;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -26,8 +29,12 @@ public abstract class AbstractController<T extends ViewModel, U extends Fragment
             Type[] actualTypeArguments = ((ParameterizedType) genericSuperclass).getActualTypeArguments();
             //This is a constant configuration defined as part of this class
             @SuppressWarnings("unchecked") Class<T> vm_clazz = (Class<T>) actualTypeArguments[0];
-            model = new ViewModelProvider(fragment).get(vm_clazz);
+            model = new ViewModelProvider(getStoreOwner()).get(vm_clazz);
         }
         return model;
+    }
+
+    protected ViewModelStoreOwner getStoreOwner(){
+        return fragment;
     }
 }

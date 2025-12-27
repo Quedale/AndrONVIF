@@ -3,6 +3,7 @@ package net.quedale.andronvif.list;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelStoreOwner;
 
 import net.quedale.andronvif.jni.AndrONVIFDevice;
 import net.quedale.andronvif.utils.AbstractModel;
@@ -56,6 +57,10 @@ public class DeviceListModel extends AbstractModel<DeviceListModel.State> {
 
         //Post new list
         this.devices.postValue(devices);
+    }
+
+    public List<AndrONVIFDevice> getDevices(){
+        return devices.getValue();
     }
 
     @Override

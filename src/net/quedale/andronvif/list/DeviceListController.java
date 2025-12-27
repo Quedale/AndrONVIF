@@ -1,5 +1,7 @@
 package net.quedale.andronvif.list;
 
+import androidx.lifecycle.ViewModelStoreOwner;
+
 import net.quedale.andronvif.utils.AbstractController;
 import net.quedale.andronvif.utils.AppExecutorService;
 
@@ -22,5 +24,10 @@ public class DeviceListController extends AbstractController<DeviceListModel, De
             task.stop();
             task = null;
         }
+    }
+
+    //Override StoreOwner to use Activity to make it a sharedModel
+    protected ViewModelStoreOwner getStoreOwner(){
+        return this.getFragment().getActivity();
     }
 }
