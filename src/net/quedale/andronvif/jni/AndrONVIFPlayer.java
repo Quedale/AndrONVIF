@@ -19,9 +19,9 @@ public class AndrONVIFPlayer extends JNIObject implements SurfaceHolder.Callback
     @CriticalNative
     public static native void nativeFinalize(); // Shutdown glib mainloop
     @FastNative  //Can't be CriticalNative because of Object parameter
-    private static native void surfaceInit(long pointer, Object surface);
+    private static native void nativeSurfaceChanged(long pointer, Object surface, int format, int width, int height);
     @CriticalNative
-    private static native void surfaceFinalize(long pointer);
+    private static native void nativeSurfaceDestroyed(long pointer);
     @CriticalNative
     private static native void nativePlay(long pointer);
     @CriticalNative
@@ -67,7 +67,7 @@ public class AndrONVIFPlayer extends JNIObject implements SurfaceHolder.Callback
     public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width, int height) {
         Log.d(AndrONVIFPlayer.class.getSimpleName(), "Surface changed to format " + format + " width "
                 + width + " height " + height);
-        surfaceInit (this.pointer_address,holder.getSurface());
+        nativeSurfaceChanged (this.pointer_address,holder.getSurface(), format, width, height);
     }
 
     @Override
@@ -78,6 +78,6 @@ public class AndrONVIFPlayer extends JNIObject implements SurfaceHolder.Callback
     @Override
     public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
         Log.d(AndrONVIFPlayer.class.getSimpleName(), "Surface destroyed");
-        surfaceFinalize (this.pointer_address);
+        nativeSurfaceDestroyed (this.pointer_address);
     }
 }

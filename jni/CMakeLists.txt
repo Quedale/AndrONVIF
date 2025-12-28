@@ -60,7 +60,7 @@ endif()
 list(APPEND CMAKE_MODULE_PATH "${GSTREAMER_ROOT}/share/cmake")
 set(GSTREAMER_NDK_BUILD_PATH  "${GSTREAMER_ROOT}/share/gst-android/ndk-build/")
 include("${GSTREAMER_NDK_BUILD_PATH}/plugins.cmake")
-set(GSTREAMER_PLUGINS         ${GSTREAMER_PLUGINS_CORE} ${GSTREAMER_PLUGINS_PLAYBACK} ${GSTREAMER_PLUGINS_CODECS} ${GSTREAMER_PLUGINS_NET} ${GSTREAMER_PLUGINS_SYS})
+set(GSTREAMER_PLUGINS         ${GSTREAMER_PLUGINS_EFFECTS} ${GSTREAMER_PLUGINS_CORE} ${GSTREAMER_PLUGINS_PLAYBACK} ${GSTREAMER_PLUGINS_CODECS} ${GSTREAMER_PLUGINS_NET} ${GSTREAMER_PLUGINS_SYS})
 set(GStreamer_EXTRA_DEPS gstreamer-video-1.0)
 set(G_IO_MODULES openssl)
 find_library(LOG_LIB log REQUIRED)
@@ -107,7 +107,8 @@ target_include_directories(${CMAKE_PROJECT_NAME}
 )
 
 target_link_libraries(${CMAKE_PROJECT_NAME}
-    PUBLIC
+    PRIVATE
+    GStreamer::mobile
     cutils
     libntlm
     glib
@@ -115,7 +116,6 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
     onvifsoap
     ssl
     crypto
-    GStreamer::mobile
     ${ANDROID_LIB}
     ${LOG_LIB}
 )
