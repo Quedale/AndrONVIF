@@ -23,26 +23,26 @@ G_DEFINE_TYPE_WITH_PRIVATE (AndrONVIFPlayer, AndrONVIFPlayer_, G_TYPE_OBJECT)
 
 static void
 AndrONVIFPlayer__on_decoder_pad_added (GstElement *element, GstPad *new_pad, GstElement * converter){
-     GstPad *sinkpad;
-     GstPadLinkReturn ret;
-     GstCaps * caps;
+    GstPad *sinkpad;
+    GstPadLinkReturn ret;
+    GstCaps * caps;
 
-     /* Debug: Print the caps of the new pad */
-     caps = gst_pad_get_current_caps(new_pad);
-     gchar *caps_str = gst_caps_to_string(caps);
-     C_DEBUG("Decoder pad added with caps: %s", caps_str);
-     g_free(caps_str);
+    /* Debug: Print the caps of the new pad */
+    caps = gst_pad_get_current_caps(new_pad);
+    gchar *caps_str = gst_caps_to_string(caps);
+    C_DEBUG("Decoder pad added with caps: %s", caps_str);
+    g_free(caps_str);
 
-     /* We can now link this pad with the rtsp-decoder sink pad */
-     sinkpad = gst_element_get_static_pad (converter, "sink");
-     ret = gst_pad_link (new_pad, sinkpad);
+    /* We can now link this pad with the rtsp-decoder sink pad */
+    sinkpad = gst_element_get_static_pad (converter, "sink");
+    ret = gst_pad_link (new_pad, sinkpad);
 
-     if (GST_PAD_LINK_FAILED (ret)) {
-         C_ERROR ("failed to link decoder pad dynamically '%s' to '%s'",GST_ELEMENT_NAME(element),GST_ELEMENT_NAME(converter));
-     }
+    if (GST_PAD_LINK_FAILED (ret)) {
+        C_ERROR ("failed to link decoder pad dynamically '%s' to '%s'",GST_ELEMENT_NAME(element),GST_ELEMENT_NAME(converter));
+    }
 
-     gst_object_unref (sinkpad);
- }
+    gst_object_unref (sinkpad);
+}
 
 static GstElement *
 AndrONVIFPlayer__create_video_pad(){
@@ -164,95 +164,95 @@ AndrONVIFPlayer__create_audio_pad(){
     gst_object_unref (pad);
 
     return audio_bin;
- }
+}
 
- static void
- AndrONVIFPlayer__on_rtsp_pad_added(GstElement *element, GstPad *new_pad, AndrONVIFPlayer * self){
-     AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (self);
-     GstElement * decoder, * converter, * new_bin = NULL, * sink = NULL;
+static void
+AndrONVIFPlayer__on_rtsp_pad_added(GstElement *element, GstPad *new_pad, AndrONVIFPlayer * self){
+    AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (self);
+    GstElement * decoder, * converter, * new_bin = NULL, * sink = NULL;
 
-     GstCaps *caps = gst_pad_get_current_caps(new_pad);
+    GstCaps *caps = gst_pad_get_current_caps(new_pad);
 
-     /* Check the new pad's type */
-     gchar * caps_str = gst_caps_to_string(caps);
-     C_DEBUG("RTSP pad added with caps: %s", caps_str);
-     g_free(caps_str);
+    /* Check the new pad's type */
+    gchar * caps_str = gst_caps_to_string(caps);
+    C_DEBUG("RTSP pad added with caps: %s", caps_str);
+    g_free(caps_str);
 
-     if(gst_caps_get_size(caps) < 1){
-         C_ERROR("Unexpected caps structure received");
-         goto exit;
-     }
+    if(gst_caps_get_size(caps) < 1){
+        C_ERROR("Unexpected caps structure received");
+        goto exit;
+    }
 
-     GstStructure *str = gst_caps_get_structure(caps, 0);
-     const gchar * media_type = gst_structure_get_string(str,"media");
-     const gchar *name = gst_structure_get_name(str);
+    GstStructure *str = gst_caps_get_structure(caps, 0);
+    const gchar * media_type = gst_structure_get_string(str,"media");
+    const gchar *name = gst_structure_get_name(str);
 
-     if (!strcmp(media_type,"video")) {
-         new_bin = AndrONVIFPlayer__create_video_pad();
-     } else if (!strcmp(media_type,"audio")) {
-         new_bin = AndrONVIFPlayer__create_audio_pad();
-     } else {
-         C_ERROR("Unexpected caps received %s",name);
-     }
+    if (!strcmp(media_type,"video")) {
+        new_bin = AndrONVIFPlayer__create_video_pad();
+    } else if (!strcmp(media_type,"audio")) {
+        new_bin = AndrONVIFPlayer__create_audio_pad();
+    } else {
+        C_ERROR("Unexpected caps received %s",name);
+    }
 
-     if(new_bin){
-         gst_bin_add (GST_BIN (priv->pipeline), new_bin);
-         GstPad * sink_pad = gst_element_get_static_pad (new_bin, "bin_sink");
-         GstPadLinkReturn pad_ret = gst_pad_link (new_pad, sink_pad);
-         if (GST_PAD_LINK_FAILED (pad_ret)) {
-             C_ERROR ("failed to link video bin dynamically '%s' to '%s'",GST_ELEMENT_NAME(element),GST_ELEMENT_NAME(new_bin));
-             goto exit;
-         }
-         gst_element_sync_state_with_parent(new_bin);
-     }
- exit:
-     gst_caps_unref(caps);
- }
+    if(new_bin){
+        gst_bin_add (GST_BIN (priv->pipeline), new_bin);
+        GstPad * sink_pad = gst_element_get_static_pad (new_bin, "bin_sink");
+        GstPadLinkReturn pad_ret = gst_pad_link (new_pad, sink_pad);
+        if (GST_PAD_LINK_FAILED (pad_ret)) {
+            C_ERROR ("failed to link video bin dynamically '%s' to '%s'",GST_ELEMENT_NAME(element),GST_ELEMENT_NAME(new_bin));
+            goto exit;
+        }
+        gst_element_sync_state_with_parent(new_bin);
+    }
+exit:
+    gst_caps_unref(caps);
+}
 
 
- static void
- AndrONVIFPlayer__create_pipeline(AndrONVIFPlayer* self, char * url, char * user, char * pass){
-     AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (self);
+static void
+AndrONVIFPlayer__create_pipeline(AndrONVIFPlayer* self, char * url, char * user, char * pass){
+    AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (self);
 
-     GstElement * rtspsrc = NULL;
-     priv->pipeline = gst_pipeline_new ("onvif-pipeline");
-     rtspsrc = gst_element_factory_make ("rtspsrc", NULL);
+    GstElement * rtspsrc = NULL;
+    priv->pipeline = gst_pipeline_new ("onvif-pipeline");
+    rtspsrc = gst_element_factory_make ("rtspsrc", NULL);
 
-     if (!priv->pipeline){
-         C_ERROR("%s Failed to created pipeline. Check your gstreamer installation...", url);
-         //TODO Set error
-         return;
-     }
-     
-     if (!rtspsrc){
-         C_ERROR ("%s Failed to created rtspsrc. Check your gstreamer installation...", url);
-         //TODO Set error
-         return;
-     }
+    if (!priv->pipeline){
+        C_ERROR("%s Failed to created pipeline. Check your gstreamer installation...", url);
+        //TODO Set error
+        return;
+    }
 
-     // Add Elements to the Bin
-     gst_bin_add_many (GST_BIN (priv->pipeline), rtspsrc, NULL);
+    if (!rtspsrc){
+        C_ERROR ("%s Failed to created rtspsrc. Check your gstreamer installation...", url);
+        //TODO Set error
+        return;
+    }
 
-     if(! g_signal_connect (G_OBJECT(rtspsrc), "pad-added", G_CALLBACK (AndrONVIFPlayer__on_rtsp_pad_added),self)){
-         C_ERROR ("%s Failed to register rtspsrc pad-added signal", url);
-         return;
-     }
+    // Add Elements to the Bin
+    gst_bin_add_many (GST_BIN (priv->pipeline), rtspsrc, NULL);
 
-     if(user)
-         g_object_set (G_OBJECT (rtspsrc), "user-id", user, NULL);
-     if(pass)
-         g_object_set (G_OBJECT (rtspsrc), "user-pw", pass, NULL);
-     if(url)
-         g_object_set (G_OBJECT (rtspsrc), "location", url, NULL);
+    if(! g_signal_connect (G_OBJECT(rtspsrc), "pad-added", G_CALLBACK (AndrONVIFPlayer__on_rtsp_pad_added),self)){
+        C_ERROR ("%s Failed to register rtspsrc pad-added signal", url);
+        return;
+    }
 
-     g_object_set (G_OBJECT (rtspsrc), "protocols", GST_RTSP_LOWER_TRANS_TCP, NULL); //TODO Allow changing this via settings
+    if(user)
+        g_object_set (G_OBJECT (rtspsrc), "user-id", user, NULL);
+    if(pass)
+        g_object_set (G_OBJECT (rtspsrc), "user-pw", pass, NULL);
+    if(url)
+        g_object_set (G_OBJECT (rtspsrc), "location", url, NULL);
 
- }
+    g_object_set (G_OBJECT (rtspsrc), "protocols", GST_RTSP_LOWER_TRANS_TCP, NULL); //TODO Allow changing this via settings
+
+}
 
 static GstBusSyncReply sync_bus_call(GstBus *bus, GstMessage *msg, AndrONVIFPlayer* self) {
     AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (self);
     if (gst_is_video_overlay_prepare_window_handle_message(msg)) {
-         C_DEBUG("Received prepare window handle message");
+        C_DEBUG("Received prepare window handle message");
         // This is where you get the overlay from the source of the message
         priv->video_sink = GST_ELEMENT(GST_MESSAGE_SRC(msg));
 
@@ -345,17 +345,41 @@ AndrONVIFPlayer__init(AndrONVIFPlayer* self) {
     priv->device = NULL;
 }
 
+
+static gboolean
+AndrONVIFPlayer__idle_pipeline_cleanup(GstElement * pipeline){
+    if(pipeline){
+        gst_object_unref (pipeline);
+    }
+    return FALSE;
+}
+
+static void
+AndrONVIFPlayer__stop(AndrONVIFPlayer * self) {
+    C_DEBUG("AndrONVIFPlayer__stop");
+    AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (self);
+
+    GstElement * pipeline = priv->pipeline;
+    priv->pipeline = NULL;
+    priv->video_sink = NULL;
+
+    if(pipeline) {
+        gst_element_set_state(pipeline, GST_STATE_NULL);
+        /*
+         * Clean up invoke on the mainloop because disposing the pipeline needs
+         * to stop first and changing the state occurs on the mainloop
+         */
+        g_main_context_invoke(context,G_SOURCE_FUNC(AndrONVIFPlayer__idle_pipeline_cleanup),pipeline);
+    }
+
+}
+
 static JNIEXPORT void JNICALL
-AndrONVIFPlayer__stop(jlong pointer) {
+AndrONVIFPlayer__nativeStop(jlong pointer) {
+    C_DEBUG("AndrONVIFPlayer__nativeStop");
     g_return_if_fail(pointer > 0);
     g_return_if_fail(ANDRONVIF_IS_PLAYER((void*)pointer));
-    AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (ANDRONVIF_PLAYER((void*)pointer));
-    if(priv->pipeline){
-        gst_element_set_state (priv->pipeline, GST_STATE_NULL);
-        gst_object_unref (priv->pipeline);
-        priv->pipeline = NULL;
-        priv->video_sink = NULL;
-    }
+    AndrONVIFPlayer__stop(ANDRONVIF_PLAYER((void*)pointer));
 }
 
 static gboolean
@@ -398,7 +422,11 @@ static void
 AndrONVIFPlayer__dispose (GObject *object){
     C_DEBUG("AndrONVIFPlayer__dispose");
     AndrONVIFPlayer * self = ANDRONVIF_PLAYER(object);
-    AndrONVIFPlayer__stop((jlong)self);
+    AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (self);
+    if(priv->pipeline) {
+        C_FIXME("Pipeline is still valid. Should be stopped before dispose is called.");
+        AndrONVIFPlayer__stop(self);
+    }
 
     G_OBJECT_CLASS (AndrONVIFPlayer__parent_class)->dispose (object);
 }
@@ -543,7 +571,7 @@ static void AndrONVIFPlayer__nativeInit (JNIEnv* env, jobject thiz) {
     gst_print_elements_by_type("audio/x-alaw");
     gst_print_elements_by_type("audio/mpeg");
     C_INFO("****************************");
-   pthread_create (&main_thread, NULL, &mainloop_function, NULL);
+    pthread_create (&main_thread, NULL, &mainloop_function, NULL);
 
 }
 
@@ -552,7 +580,7 @@ static JNINativeMethod native_methods[] = {
         { "nativeInit", "()V", (void *) AndrONVIFPlayer__nativeInit},
         {"nativeNew", "()J", (void *) AndrONVIFPlayer__nativeNew},
         {"nativePlay", "(J)V", (void *) AndrONVIFPlayer__play},
-        {"nativeStop", "(J)V", (void *) AndrONVIFPlayer__stop},
+        {"nativeStop", "(J)V", (void *) AndrONVIFPlayer__nativeStop},
         {"setDevice", "(JJ)V", (void *) AndrONVIFPlayer__set_device},
         {"getGstreamerInfo", "()Ljava/lang/String;", (void *) AndrONVIFPlayer__getGstreamerInfo},
         {"nativeSurfaceDestroyed", "(J)V", (void *) AndrONVIFPlayer__nativeSurfaceDestroyed},

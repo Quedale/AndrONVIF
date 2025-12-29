@@ -3,6 +3,7 @@ package net.quedale.andronvif.list;
 import android.content.Context;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.room.Room;
 
 import net.quedale.andronvif.db.AndrONVIFDatabase;
@@ -33,32 +34,19 @@ public class DeviceListBackgroundTask extends CancellableRunnable {
         List<DBDevice> dbdevices = dao.getAll();
         List<AndrONVIFDevice> androdevices = new ArrayList<>();
         for(DBDevice device : dbdevices){
-            StringBuilder builder = new StringBuilder();
-            if(device.tls)
-                builder.append("https://");
-            else
-                builder.append("http://");
-
-            builder.append(device.address);
-            if((device.tls && device.port != 443) || (!device.tls && device.port != 80)) {
-                builder.append(":");
-                builder.append(device.port);
-            }
-            builder.append("/onvif/device_service");
-
-            //TODO Using single native constructor
-            AndrONVIFDevice newdev = new AndrONVIFDevice(builder.toString());
-            newdev.setCredentials(device.username,device.password);
-
+            AndrONVIFDevice newdev = convertDBDevice_to_AndrONVIFDevice(device);
             androdevices.add(newdev);
 
             if(this.isStopped()){
                 for(AndrONVIFDevice androdev : androdevices){
                     androdev.unref();
                 }
+                db.close();
                 return;
             }
         }
+
+        db.close();
 
         //TODO do this part from individual device coroutine
         for(AndrONVIFDevice androdev : androdevices){
@@ -67,6 +55,27 @@ public class DeviceListBackgroundTask extends CancellableRunnable {
 
         //The loop above should be fast enough that adding device individually would be irrelevant
         model.setDevices(androdevices);
+    }
+
+    @NonNull
+    private static AndrONVIFDevice convertDBDevice_to_AndrONVIFDevice(DBDevice device) {
+        StringBuilder builder = new StringBuilder();
+        if(device.tls)
+            builder.append("https://");
+        else
+            builder.append("http://");
+
+        builder.append(device.address);
+        if((device.tls && device.port != 443) || (!device.tls && device.port != 80)) {
+            builder.append(":");
+            builder.append(device.port);
+        }
+        builder.append("/onvif/device_service");
+
+        //TODO Using single native constructor
+        AndrONVIFDevice newdev = new AndrONVIFDevice(builder.toString());
+        newdev.setCredentials(device.username, device.password);
+        return newdev;
     }
 
     @Override
