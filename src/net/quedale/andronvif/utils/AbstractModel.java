@@ -1,14 +1,20 @@
 package net.quedale.andronvif.utils;
 
+import android.app.Application;
+
+import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Observer;
-import androidx.lifecycle.ViewModel;
 
 import org.jspecify.annotations.NonNull;
 
-public abstract class AbstractModel<T extends Enum<T>> extends ViewModel {
+public abstract class AbstractModel<T extends Enum<T>> extends AndroidViewModel {
     private final MutableLiveData<T> state = new MutableLiveData<>();
+
+    public AbstractModel(@androidx.annotation.NonNull Application application) {
+        super(application);
+    }
 
     public void setState(T state){
         this.state.postValue(state);

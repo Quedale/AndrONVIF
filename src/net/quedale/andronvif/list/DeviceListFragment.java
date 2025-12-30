@@ -9,6 +9,7 @@ import android.widget.GridLayout;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.fragment.NavHostFragment;
 import net.quedale.andronvif.R;
 import net.quedale.andronvif.databinding.DeviceListFragmentBinding;
@@ -17,7 +18,7 @@ import net.quedale.andronvif.jni.AndrONVIFDevice;
 public class DeviceListFragment extends Fragment {
 
     private DeviceListFragmentBinding binding;
-    private final DeviceListController controller = new DeviceListController(this);
+    private DeviceListViewModel model;
 
     @Override
     public View onCreateView(
@@ -27,7 +28,8 @@ public class DeviceListFragment extends Fragment {
         binding = DeviceListFragmentBinding.inflate(inflater, container, false);
         Log.d("DeviceListFragment", "onCreateView");
 
-        controller.getModel().observeState(getViewLifecycleOwner(), newstate -> {
+        model = new ViewModelProvider(this.requireActivity()).get(DeviceListViewModel.class);
+        model.observeState(getViewLifecycleOwner(), newstate -> {
             Log.d("DeviceListFragment", "New Device list state !! : " + newstate);
             switch(newstate){
                 case INITIALIZING:
@@ -40,12 +42,12 @@ public class DeviceListFragment extends Fragment {
             }
         });
 
-        controller.getModel().observeDevices(getViewLifecycleOwner(), newlist -> {
+        model.observeDevices(getViewLifecycleOwner(), newlist -> {
             Log.d("DeviceListFragment", "New Device list !! : " + newlist.size());
             for(int i=0;i<newlist.size();i++) {
                 AndrONVIFDevice device = newlist.get(i);
-                if (controller.getModel().isDeviceRendered(device)) {
-                    Log.d("DeviceListFragment", "Device already rendered or added : " + controller.getModel().isDeviceRendered(device));
+                if (model.isDeviceRendered(device)) {
+                    Log.d("DeviceListFragment", "Device already rendered or added : " + model.isDeviceRendered(device));
                     continue;
                 }
 
@@ -80,7 +82,7 @@ public class DeviceListFragment extends Fragment {
 
                 binding.gridlayout.addView(device_view,params);
 
-                controller.getModel().deviceRendered(device);
+                model.deviceRendered(device);
             }
         });
 
@@ -99,7 +101,7 @@ public class DeviceListFragment extends Fragment {
     @Override
     public void onDestroyView() {
         Log.d("DeviceListFragment","onDestroyView");
-        controller.getModel().resetRendered();
+        model.resetRendered();
         super.onDestroyView();
     }
 
@@ -107,13 +109,12 @@ public class DeviceListFragment extends Fragment {
     public void onStart() {
         super.onStart();
         Log.d("DeviceListFragment", "onStart");
-        controller.start();
+        model.start();
     }
 
     @Override
     public void onStop() {
         Log.d("DeviceListFragment","onStop");
-        controller.stop();
         super.onStop();
     }
 }

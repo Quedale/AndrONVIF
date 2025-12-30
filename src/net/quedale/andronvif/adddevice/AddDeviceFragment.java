@@ -17,12 +17,14 @@ import androidx.navigation.fragment.NavHostFragment;
 
 import net.quedale.andronvif.jni.AndrONVIFDevice;
 import net.quedale.andronvif.databinding.AddDeviceFragmentBinding;
-import net.quedale.andronvif.list.DeviceListModel;
+import net.quedale.andronvif.list.DeviceListViewModel;
+
+import java.util.Objects;
 
 public class AddDeviceFragment extends Fragment {
     private AddDeviceFragmentBinding binding;
-    private final AddDeviceController controller = new AddDeviceController(this);
-    private DeviceListModel activity_model;
+    private DeviceListViewModel activity_model;
+    private AddDeviceModel model;
 
     @Override
     public View onCreateView(
@@ -30,13 +32,14 @@ public class AddDeviceFragment extends Fragment {
             Bundle savedInstanceState
     ) {
         binding = AddDeviceFragmentBinding.inflate(inflater, container, false);
-        activity_model = new ViewModelProvider(this.requireActivity()).get(DeviceListModel .class);
+        activity_model = new ViewModelProvider(this.requireActivity()).get(DeviceListViewModel.class);
+        model = new ViewModelProvider(this).get(AddDeviceModel.class);
         return binding.getRoot();
     }
 
     private void populate(AndrONVIFDevice device){
         if (device != null) {
-            controller.getModel().setDevice(device);
+            model.setDevice(device);
 
             String hostname = device.getHostname();
             String protocol = device.getProtocol();
@@ -82,7 +85,7 @@ public class AddDeviceFragment extends Fragment {
             Log.e(AddDeviceFragment.class.getSimpleName(),"No argument bundle.");
         this.populate(device);
 
-        controller.getModel().observeState(getViewLifecycleOwner(), newstate -> {
+        model.observeState(getViewLifecycleOwner(), newstate -> {
             Log.d(AddDeviceFragment.class.getSimpleName()," New State " + newstate);
             switch(newstate){
                 case AUTHENTICATING:
@@ -90,10 +93,10 @@ public class AddDeviceFragment extends Fragment {
                     break;
                 case DONE:
                     binding.loadingOverlay.setVisibility(INVISIBLE);
-                    switch(controller.getModel().getFault()){
+                    switch(model.getFault()){
                         case SOAP_FAULT_NONE:
-                            activity_model.addDevice(controller.getModel().getDevice());
-                            AddDeviceFragmentDirections.ActionAddDeviceFragmentToPlayerFragment action = AddDeviceFragmentDirections.actionAddDeviceFragmentToPlayerFragment(controller.getModel().getDevice());
+                            activity_model.addDevice(Objects.requireNonNull(model.getDevice()));
+                            AddDeviceFragmentDirections.ActionAddDeviceFragmentToPlayerFragment action = AddDeviceFragmentDirections.actionAddDeviceFragmentToPlayerFragment(model.getDevice());
                             NavHostFragment.findNavController(AddDeviceFragment.this).navigate(action);
                             break;
                         case SOAP_FAULT_CONNECTION_ERROR:
@@ -116,16 +119,16 @@ public class AddDeviceFragment extends Fragment {
 
         binding.saveBtn.setOnClickListener(view1 -> {
             if(binding.txthostname.getText() != null)
-                controller.getModel().setHostname(binding.txthostname.getText().toString());
+                model.setHostname(binding.txthostname.getText().toString());
             if(binding.txtport.getText() != null)
-                controller.getModel().setPort(Integer.parseInt(binding.txtport.getText().toString()));
+                model.setPort(Integer.parseInt(binding.txtport.getText().toString()));
             if(binding.chckproto.isChecked())
-                controller.getModel().setHTTPS(true);
+                model.setHTTPS(true);
             if(binding.txtuser.getText() != null)
-                controller.getModel().setUsername(binding.txtuser.getText().toString());
+                model.setUsername(binding.txtuser.getText().toString());
             if(binding.txtpassword.getText() != null)
-                controller.getModel().setPassword(binding.txtpassword.getText().toString());
-            controller.save();
+                model.setPassword(binding.txtpassword.getText().toString());
+            model.save();
         });
 
         binding.cancelbtn.setOnClickListener(view1 -> NavHostFragment.findNavController(AddDeviceFragment.this).popBackStack());
@@ -134,14 +137,13 @@ public class AddDeviceFragment extends Fragment {
     @Override
     public void onDestroyView() {
         Log.d(AddDeviceFragment.class.getSimpleName(),"onDestroyView");
-        controller.getModel().cleanup();
+        model.cleanup();
         super.onDestroyView();
     }
 
     @Override
     public void onStop() {
         Log.d(AddDeviceFragment.class.getSimpleName(),"onStop");
-        controller.stop();
         super.onStop();
     }
 }

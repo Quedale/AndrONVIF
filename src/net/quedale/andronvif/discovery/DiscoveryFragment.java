@@ -15,14 +15,17 @@ import androidx.navigation.fragment.NavHostFragment;
 import net.quedale.andronvif.jni.AndrONVIFDevice;
 import net.quedale.andronvif.R;
 import net.quedale.andronvif.databinding.DeviceDiscoveryFragmentBinding;
-import net.quedale.andronvif.list.DeviceListModel;
+import net.quedale.andronvif.list.DeviceListViewModel;
+
+import java.util.List;
 
 public class DiscoveryFragment extends Fragment {
 
     private DeviceDiscoveryFragmentBinding binding;
-    private final DiscoveryController controller = new DiscoveryController(this);
     private CountDownTimer countDownTimer;
-    private DeviceListModel activity_model;
+    private DeviceListViewModel activity_model;
+    private DiscoveryModel model;
+
     @Override
     public View onCreateView(
             @NonNull LayoutInflater inflater, ViewGroup container,
@@ -47,10 +50,11 @@ public class DiscoveryFragment extends Fragment {
             }
         };
 
-        activity_model = new ViewModelProvider(this.requireActivity()).get(DeviceListModel .class);
+        activity_model = new ViewModelProvider(this.requireActivity()).get(DeviceListViewModel.class);
+        model = new ViewModelProvider(this).get(DiscoveryModel.class);
         //TODO oberse activity model to add discovered device that were deleted?
 
-        controller.getModel().observeState(getViewLifecycleOwner(), newstate -> {
+        model.observeState(getViewLifecycleOwner(), newstate -> {
             Log.d(DiscoveryFragment.class.getSimpleName()," New State " + newstate);
             switch(newstate){
                 case INITIALIZING:
@@ -68,13 +72,20 @@ public class DiscoveryFragment extends Fragment {
             }
         });
 
-        controller.getModel().observeDiscovery(getViewLifecycleOwner(), newlist -> {
+        model.observeDiscovery(getViewLifecycleOwner(), newlist -> {
             Log.d("DeviceDiscoveryFragment", "modelChanged!! " + newlist.size());
             for(AndrONVIFDevice device : newlist){
-                if(controller.getModel().isDeviceRendered(device) || activity_model.getDevices().contains(device)){
-                    Log.d(DiscoveryFragment.class.getSimpleName(),"Device already rendered or added : " + controller.getModel().isDeviceRendered(device) + " :: " + activity_model.getDevices().contains(device));
+                List<AndrONVIFDevice> activiyDevices = activity_model.getDevices();
+                if(model.isDeviceRendered(device)){
+                    Log.d(DiscoveryFragment.class.getSimpleName(),"Device already rendered : " + model.isDeviceRendered(device));
                     continue;
                 }
+
+                if(activiyDevices != null && activiyDevices.contains(device)){
+                    Log.d(DiscoveryFragment.class.getSimpleName(),"Device already added : " + activiyDevices.contains(device));
+                    continue;
+                }
+
                 Log.d("DeviceDiscoveryFragment", "Adding device to UI : " + device.getUrl());
                 View device_view = inflater.inflate(R.layout.discovered_device, binding.deviceList, false);
                 DiscoveryDeviceRow device_row = device_view.findViewById(R.id.devicerow);
@@ -86,7 +97,7 @@ public class DiscoveryFragment extends Fragment {
                     NavHostFragment.findNavController(DiscoveryFragment.this).navigate(action);
                 });
                 binding.deviceList.addView(device_view);
-                controller.getModel().deviceRendered(device);
+                model.deviceRendered(device);
             }
         });
 
@@ -98,7 +109,7 @@ public class DiscoveryFragment extends Fragment {
     @Override
     public void onDestroyView() {
         Log.d(DiscoveryFragment.class.getSimpleName(),"onDestroyView");
-        controller.getModel().resetRendered();
+        model.resetRendered();
         super.onDestroyView();
     }
 
@@ -106,14 +117,13 @@ public class DiscoveryFragment extends Fragment {
     public void onStart() {
         super.onStart();
         Log.d("DeviceDiscoveryFragment", "onStart");
-        controller.start();
+        model.start();
     }
 
     @Override
     public void onStop() {
         Log.d(DiscoveryFragment.class.getSimpleName(),"onStop");
         countDownTimer.cancel();
-        controller.stop();
         super.onStop();
     }
 }

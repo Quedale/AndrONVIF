@@ -1,19 +1,22 @@
 package net.quedale.andronvif.jni;
 
+import androidx.annotation.MainThread;
+import androidx.lifecycle.LifecycleOwner;
+import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.Observer;
+
+import org.jspecify.annotations.NonNull;
+
 import java.io.Serializable;
 
 import dalvik.annotation.optimization.CriticalNative;
 import dalvik.annotation.optimization.FastNative;
 
 public class AndrONVIFDevice extends JNIObject implements Serializable/*implements Parcelable*/ {
-    public enum SoapFault {
-        SOAP_FAULT_NONE,
-        SOAP_FAULT_CONNECTION_ERROR,
-        SOAP_FAULT_NOT_VALID,
-        SOAP_FAULT_UNAUTHORIZED,
-        SOAP_FAULT_ACTION_NOT_SUPPORTED,
-        SOAP_FAULT_UNEXPECTED
-    }
+    public static final int STATE_AUTHENTICATED_MASK = 1;
+    public static final int STATE_SCOPE_MASK = 2;
+
+    private final MutableLiveData<Integer> stateflags = new MutableLiveData<>();
 
     @FastNative //Can't be CriticalNative because of String parameter
     private static native long nativeNew(String url);
@@ -25,8 +28,10 @@ public class AndrONVIFDevice extends JNIObject implements Serializable/*implemen
     private static native int getPort(long pointer);
     @FastNative
     private static native void setCredentials(long pointer, String username, String password);
-    @CriticalNative
+    //Not FastNative because of multiple slow IO calls
     private static native int authenticate(long pointer);
+    //Not FastNative because of slow IO calls
+    private static native long fetchScopes(long pointer);
 
     private final String url;
     private String location = null;
@@ -46,8 +51,12 @@ public class AndrONVIFDevice extends JNIObject implements Serializable/*implemen
         this.hardware = match.getScopeValue("hardware");
     }
 
-    public SoapFault authenticate(){
-        return SoapFault.values()[AndrONVIFDevice.authenticate(this.pointer_address)];
+    public void observeStateFlags(@org.jspecify.annotations.NonNull LifecycleOwner owner, @NonNull Observer<? super Integer> observer){
+        stateflags.observe(owner, observer);
+    }
+
+    public JNISoapObject.SoapFault authenticate(){
+        return JNISoapObject.SoapFault.values()[AndrONVIFDevice.authenticate(this.pointer_address)];
     }
 
     public void setCredentials(String username, String password){
@@ -81,8 +90,23 @@ public class AndrONVIFDevice extends JNIObject implements Serializable/*implemen
     }
 
     public String getHardware(){
-        //TODO fetch hardware if null
         return this.hardware;
+    }
+
+    @MainThread
+    public void setState(int state){
+        stateflags.setValue(state);
+    }
+
+    public JNISoapObject.SoapFault fetchScopes(){
+        AndrONVIFScopes scopes = new AndrONVIFScopes(fetchScopes(this.pointer_address));
+        JNISoapObject.SoapFault fault = scopes.getFault();
+        if(scopes.getFault() == JNISoapObject.SoapFault.SOAP_FAULT_NONE){
+            this.name = scopes.extractScope("name");
+            this.hardware = scopes.extractScope("hardware");
+            this.location = scopes.extractScope("location");
+        }
+        return fault;
     }
 
     @Override

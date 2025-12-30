@@ -2,7 +2,6 @@ package net.quedale.andronvif.adddevice
 
 import android.text.Editable
 import android.text.TextWatcher
-import android.util.Log
 import android.widget.EditText
 
 class PortNumberTextWatcher(private val editText: EditText) : TextWatcher {
