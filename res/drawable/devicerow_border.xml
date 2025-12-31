@@ -4,7 +4,7 @@
 
     <!-- Define the border color and width (thickness) -->
     <stroke
-        android:width="2dp"
+        android:width="@dimen/borderSize"
         android:color="?attr/colorPrimary" /> <!-- Example: black color -->
 
     <!-- Define the background color of the view (optional, can be transparent) -->
@@ -13,5 +13,5 @@
 
     <!-- Define rounded corners (optional) -->
     <corners
-        android:radius="8dp" />
+        android:radius="@dimen/borderRadius" />
 </shape>

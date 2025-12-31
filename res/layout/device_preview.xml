@@ -6,17 +6,19 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:background="@drawable/devicerow_state_border_selector"
-    android:padding="10dp"
     android:layout_margin="1dp">
     <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-        <ImageView
+        <com.google.android.material.imageview.ShapeableImageView
+            xmlns:app="http://schemas.android.com/apk/res-auto"
             android:id="@+id/snapshotPreview"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:contentDescription="A onvif snapshot preview"
             android:adjustViewBounds="true"
+            android:padding="@dimen/smallerBorderSize"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.Imageview.Rounded"
             android:scaleType="fitXY" />
         <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
             android:layout_width="wrap_content"
@@ -24,7 +26,8 @@
             android:orientation="vertical"
             android:background="@drawable/devicerow_state_border_selector"
             android:alpha="0.5"
-            android:padding="8dp">
+            android:padding="8dp"
+            android:layout_margin="6dp">
             <TextView xmlns:android="http://schemas.android.com/apk/res/android"
                 android:id="@+id/device_name"
                 android:textColor="@drawable/devicerow_state_color_selector"

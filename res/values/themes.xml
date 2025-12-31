@@ -5,5 +5,10 @@
     <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
   </style>
 
+  <style name="ShapeAppearance.Imageview.Rounded" parent="">
+      <item name="cornerFamily">rounded</item>
+      <item name="cornerSize">@dimen/borderRadius</item> <!-- Or 50% for a circle -->
+  </style>
+
   <style name="Theme.AndrONVIF" parent="Base.Theme.AndrONVIF" />
 </resources>
