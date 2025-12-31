@@ -120,7 +120,8 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:gravity="center"
-        android:background="#B3FFFFFF"
+        android:background="?attr/colorSurface"
+        android:alpha="0.5"
         android:orientation="vertical"
         android:visibility="gone">
         <ProgressBar

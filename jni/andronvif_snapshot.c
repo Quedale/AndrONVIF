@@ -9,7 +9,7 @@ AndrONVIFSnapshot__getNativeBuffer(JNIEnv *env, jclass klazz, jlong pointer) {
     g_return_val_if_fail(ONVIF_IS_MEDIA_SNAPSHOT((void*)pointer), NULL);
 
     OnvifMediaSnapshot * snapshot = ONVIF_MEDIA_SNAPSHOT((void*)pointer);
-    C_FATAL("snapshot : %d", OnvifMediaSnapshot__get_size(snapshot));
+
     // 2. Wrap the native memory in a Java DirectByteBuffer
     jobject directBuffer = (*env)->NewDirectByteBuffer(env,OnvifMediaSnapshot__get_buffer(snapshot), OnvifMediaSnapshot__get_size(snapshot));
 

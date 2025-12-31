@@ -3,4 +3,6 @@
     <dimen name="top_padding">16dp</dimen>
     <dimen name="grid_margin">6dp</dimen>
     <integer name="deviewPreviewColumnCount">2</integer>
+    <dimen name="previewTitleSize">20sp</dimen>
+    <dimen name="previewFontSize">16sp</dimen>
 </resources>

@@ -38,8 +38,6 @@ public class DevicePreview extends LinearLayout {
 
     private void updateScopes(AndrONVIFDevice device){
         Log.d("DevicePreview", "updating Scopes : " + device.getUrl());
-        TextView device_row = this.findViewById(R.id.device_url_view);
-        device_row.setText(device.getUrl());
 
         TextView device_name = this.findViewById(R.id.device_name);
         device_name.setText(device.getName());
