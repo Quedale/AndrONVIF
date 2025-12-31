@@ -7,22 +7,22 @@
     android:background="@drawable/devicerow_state_border_selector"
     android:padding="10dp"
     android:layout_margin="1dp">
-    <TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    <TextView
         android:id="@+id/device_name"
         android:textColor="@drawable/devicerow_state_color_selector"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
-    <TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    <TextView
         android:id="@+id/device_hw"
         android:textColor="@drawable/devicerow_state_color_selector"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
-    <TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    <TextView
         android:id="@+id/device_location"
         android:textColor="@drawable/devicerow_state_color_selector"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
-    <TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    <TextView
         android:id="@+id/device_url_view"
         android:textColor="@drawable/devicerow_state_color_selector"
         android:layout_width="wrap_content"

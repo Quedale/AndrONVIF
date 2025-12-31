@@ -7,6 +7,9 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.fragment.NavHostFragment;
@@ -40,7 +43,7 @@ public class DeviceListFragment extends Fragment {
                     DeviceListFragment.this.binding.dbfetchProgress.setVisibility(View.VISIBLE);
                     break;
                 case DONE:
-                    DeviceListFragment.this.binding.dbfetchProgress.setVisibility(View.GONE);
+                    DeviceListFragment.this.binding.dbfetchProgress.setVisibility(View.INVISIBLE);
                     break;
             }
         });
@@ -48,6 +51,15 @@ public class DeviceListFragment extends Fragment {
         model.observeDevices(getViewLifecycleOwner(), newlist -> {
             Log.d("DeviceListFragment", "New Device list : " + newlist.size());
             adapter.setDevices(newlist);
+        });
+
+        //Uses the systembar space to display loading indicator
+        ViewCompat.setOnApplyWindowInsetsListener(binding.listlinelayout, (v, windowInsets) -> {
+            Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
+            ViewGroup.LayoutParams params = v.getLayoutParams();
+            params.height = insets.top;
+            v.setLayoutParams(params);
+            return WindowInsetsCompat.CONSUMED;
         });
 
         return binding.getRoot();

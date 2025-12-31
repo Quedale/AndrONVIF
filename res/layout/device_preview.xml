@@ -6,8 +6,8 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:background="@drawable/devicerow_state_border_selector"
-    android:layout_margin="1dp">
-    <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_margin="2dp">
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
         <com.google.android.material.imageview.ShapeableImageView
@@ -15,12 +15,12 @@
             android:id="@+id/snapshotPreview"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:contentDescription="A onvif snapshot preview"
+            android:contentDescription="@string/onvif_snapshot_preview_content_desc"
             android:adjustViewBounds="true"
             android:padding="@dimen/smallerBorderSize"
             app:shapeAppearanceOverlay="@style/ShapeAppearance.Imageview.Rounded"
             android:scaleType="fitXY" />
-        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical"
@@ -28,7 +28,7 @@
             android:alpha="0.5"
             android:padding="8dp"
             android:layout_margin="6dp">
-            <TextView xmlns:android="http://schemas.android.com/apk/res/android"
+            <TextView
                 android:id="@+id/device_name"
                 android:textColor="@drawable/devicerow_state_color_selector"
                 android:layout_width="wrap_content"
@@ -37,7 +37,7 @@
                 android:singleLine="true"
                 android:ellipsize="end"
                 android:textSize="@dimen/previewTitleSize"/>
-            <TextView xmlns:android="http://schemas.android.com/apk/res/android"
+            <TextView
                 android:id="@+id/device_hw"
                 android:textColor="@drawable/devicerow_state_color_selector"
                 android:layout_width="wrap_content"
@@ -46,7 +46,7 @@
                 android:singleLine="true"
                 android:ellipsize="end"
                 android:textSize="@dimen/previewFontSize" />
-            <TextView xmlns:android="http://schemas.android.com/apk/res/android"
+            <TextView
                 android:id="@+id/device_location"
                 android:textColor="@drawable/devicerow_state_color_selector"
                 android:layout_width="wrap_content"

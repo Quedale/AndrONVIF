@@ -5,4 +5,6 @@
     <string name="device_list_fragment_label">Device List Fragment</string>
     <string name="device_discovery_fragment_label">Device Discovery Fragment</string>
     <string name="add_device_fragment_label">Add Device</string>
+    <string name="onvif_snapshot_preview_content_desc">A onvif snapshot preview</string>
+    <string name="button_to_add_onvif_devices_content_desc">Button to Add onvif devices</string>
 </resources>

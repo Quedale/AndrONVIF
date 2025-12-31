@@ -4,28 +4,28 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="8dp">
-        <com.google.android.material.progressindicator.LinearProgressIndicator
-            android:id="@+id/dbfetch_progress"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            android:indeterminate="true"
-            android:padding="@dimen/top_padding"
-            android:max="1000"/>
+            android:gravity="center"
+            android:id="@+id/listlinelayout">
+            <com.google.android.material.progressindicator.LinearProgressIndicator
+                android:id="@+id/dbfetch_progress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:indeterminate="true"
+                android:max="1000"/>
+        </RelativeLayout>
         <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent">
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/my_recycler_view"
-                android:clipToPadding="false"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 app:spanCount="@integer/deviewPreviewColumnCount"
@@ -39,6 +39,6 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="@dimen/fab_margin"
-        android:contentDescription="TODO"
+        android:contentDescription="@string/button_to_add_onvif_devices_content_desc"
         app:srcCompat="@android:drawable/ic_input_add" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

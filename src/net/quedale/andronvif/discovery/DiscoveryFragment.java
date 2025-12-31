@@ -7,6 +7,9 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.fragment.NavHostFragment;
@@ -34,6 +37,15 @@ public class DiscoveryFragment extends Fragment {
     ) {
         binding = DeviceDiscoveryFragmentBinding.inflate(inflater, container, false);
 
+        //Uses the systembar space to display loading indicator
+        ViewCompat.setOnApplyWindowInsetsListener(binding.listlinelayout, (v, windowInsets) -> {
+            Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
+            ViewGroup.LayoutParams params = v.getLayoutParams();
+            params.height = insets.top;
+            v.setLayoutParams(params);
+            return WindowInsetsCompat.CONSUMED;
+        });
+
         DeviceListAdapter<DiscoveryDeviceRow> adapter = getDevicePreviewAbstractDeviceListAdapter();
         binding.discoveryRecyclerView.setAdapter(adapter);
 
@@ -56,7 +68,7 @@ public class DiscoveryFragment extends Fragment {
                     DiscoveryFragment.this.countDownTimer.startProgress();
                     break;
                 case DONE:
-                    DiscoveryFragment.this.binding.discoveryProgress.setVisibility(View.GONE);
+                    DiscoveryFragment.this.binding.discoveryProgress.setVisibility(View.INVISIBLE);
                     break;
             }
         });

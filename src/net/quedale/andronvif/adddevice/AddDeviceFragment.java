@@ -11,6 +11,9 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.fragment.NavHostFragment;
@@ -34,6 +37,14 @@ public class AddDeviceFragment extends Fragment {
         binding = AddDeviceFragmentBinding.inflate(inflater, container, false);
         activity_model = new ViewModelProvider(this.requireActivity()).get(DeviceListViewModel.class);
         model = new ViewModelProvider(this).get(AddDeviceModel.class);
+
+        //Dont display the form under the status bar
+        ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(), (v, windowInsets) -> {
+            Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(v.getPaddingLeft(),insets.top,v.getPaddingRight(),v.getPaddingBottom());
+            return WindowInsetsCompat.CONSUMED;
+        });
+        
         return binding.getRoot();
     }
 
