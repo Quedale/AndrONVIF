@@ -27,13 +27,14 @@
         <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent">
-            <GridLayout
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/my_recycler_view"
+                android:clipToPadding="false"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:columnCount="2"
-                android:rowCount="2"
-                android:id="@+id/gridlayout">
-            </GridLayout>
+                app:spanCount="@integer/deviewPreviewColumnCount"
+                app:layoutManager="androidx.recyclerview.widget.GridLayoutManager">
+            </androidx.recyclerview.widget.RecyclerView>
         </androidx.core.widget.NestedScrollView>
     </LinearLayout>
     <com.google.android.material.floatingactionbutton.FloatingActionButton

@@ -28,4 +28,11 @@
         android:textColor="@drawable/devicerow_state_color_selector"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
+    <ImageView
+        android:id="@+id/snapshotPreview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:contentDescription="A onvif snapshot preview"
+        android:adjustViewBounds="true"
+        android:scaleType="fitXY" />
 </net.quedale.andronvif.list.DevicePreview>

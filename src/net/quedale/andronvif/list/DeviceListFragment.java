@@ -5,15 +5,14 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.GridLayout;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.fragment.NavHostFragment;
+
 import net.quedale.andronvif.R;
 import net.quedale.andronvif.databinding.DeviceListFragmentBinding;
-import net.quedale.andronvif.jni.AndrONVIFDevice;
 
 public class DeviceListFragment extends Fragment {
 
@@ -27,6 +26,9 @@ public class DeviceListFragment extends Fragment {
 
         binding = DeviceListFragmentBinding.inflate(inflater, container, false);
         Log.d("DeviceListFragment", "onCreateView");
+
+        DevicePreviewAdapter adapter = new DevicePreviewAdapter(NavHostFragment.findNavController(DeviceListFragment.this));
+        binding.myRecyclerView.setAdapter(adapter);
 
         model = new ViewModelProvider(this.requireActivity()).get(DeviceListViewModel.class);
         model.observeState(getViewLifecycleOwner(), newstate -> {
@@ -43,47 +45,8 @@ public class DeviceListFragment extends Fragment {
         });
 
         model.observeDevices(getViewLifecycleOwner(), newlist -> {
-            Log.d("DeviceListFragment", "New Device list !! : " + newlist.size());
-            for(int i=0;i<newlist.size();i++) {
-                AndrONVIFDevice device = newlist.get(i);
-                if (model.isDeviceRendered(device)) {
-                    Log.d("DeviceListFragment", "Device already rendered or added : " + model.isDeviceRendered(device));
-                    continue;
-                }
-
-                Log.d("DeviceListFragment", "Adding device to UI : " + device.getUrl());
-                View device_view = inflater.inflate(R.layout.device_preview, binding.gridlayout, false);
-                DevicePreview device_preview = device_view.findViewById(R.id.devicepreview);
-                device_preview.setDevice(device);
-
-                device_view.setOnClickListener(v -> {
-                    Log.d("DeviceListFragment","Clicked " + device.getUrl());
-                    DeviceListFragmentDirections.ActionDeviceListFragmentToPlayerFragment action = DeviceListFragmentDirections.actionDeviceListFragmentToPlayerFragment(device);
-                    NavHostFragment.findNavController(DeviceListFragment.this).navigate(action);
-                });
-
-                int rowindex = i / 2;
-                int colindex = i % 2;
-                GridLayout.Spec rowSpec = GridLayout.spec(rowindex);
-                GridLayout.Spec colSpec = GridLayout.spec(colindex);
-                GridLayout.LayoutParams params = new GridLayout.LayoutParams(rowSpec, colSpec);
-                params.width = 0; // Or ViewGroup.LayoutParams.WRAP_CONTENT
-                params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
-                params.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f);
-                params.rowSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f);
-
-                int grid_margin = (int) getResources().getDimension(R.dimen.grid_margin);
-                if(rowindex > 0)
-                    params.topMargin = grid_margin;
-                if(colindex == 0)
-                    params.rightMargin = grid_margin/2;
-                else
-                    params.leftMargin = grid_margin/2;
-
-                binding.gridlayout.addView(device_view,params);
-
-                model.deviceRendered(device);
-            }
+            Log.d("DeviceListFragment", "New Device list : " + newlist.size());
+            adapter.setDevices(newlist);
         });
 
         return binding.getRoot();
@@ -101,7 +64,6 @@ public class DeviceListFragment extends Fragment {
     @Override
     public void onDestroyView() {
         Log.d("DeviceListFragment","onDestroyView");
-        model.resetRendered();
         super.onDestroyView();
     }
 

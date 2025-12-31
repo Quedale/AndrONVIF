@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -12,6 +13,7 @@ import androidx.lifecycle.LifecycleOwner;
 
 import net.quedale.andronvif.R;
 import net.quedale.andronvif.jni.AndrONVIFDevice;
+import net.quedale.andronvif.jni.AndrONVIFSnapshot;
 
 public class DevicePreview extends LinearLayout {
     public DevicePreview(Context context) {
@@ -35,6 +37,7 @@ public class DevicePreview extends LinearLayout {
     }
 
     private void updateScopes(AndrONVIFDevice device){
+        Log.d("DevicePreview", "updating Scopes : " + device.getUrl());
         TextView device_row = this.findViewById(R.id.device_url_view);
         device_row.setText(device.getUrl());
 
@@ -48,6 +51,18 @@ public class DevicePreview extends LinearLayout {
         device_hardware.setText(device.getHardware());
     }
 
+    private void updateBitmap(AndrONVIFDevice device){
+        AndrONVIFSnapshot snapshot = device.getSnapshot();
+        if(snapshot == null) {
+            Log.d("DevicePreview", "Device no snapshot to update : " + device.getUrl());
+            return;
+        }
+
+        Log.d("DevicePreview", "Device updating snapshot : " + device.getUrl());
+        ImageView iv = this.findViewById(R.id.snapshotPreview);
+        iv.setImageBitmap(snapshot.getBitmap());
+    }
+
     public void setDevice(AndrONVIFDevice device){
         updateScopes(device);
         device.observeStateFlags(getLifecycleOwner(), newstate -> {
@@ -56,8 +71,11 @@ public class DevicePreview extends LinearLayout {
             }
 
             if((newstate & AndrONVIFDevice.STATE_SCOPE_MASK) != 0){
-                Log.d("DevicePreview", "Device scopes fetched : " + device.getUrl());
                 updateScopes(device);
+            }
+
+            if((newstate & AndrONVIFDevice.STATE_SNAP_MASK) != 0){
+                updateBitmap(device);
             }
         });
     }

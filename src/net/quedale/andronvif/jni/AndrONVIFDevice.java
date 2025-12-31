@@ -15,6 +15,7 @@ import dalvik.annotation.optimization.FastNative;
 public class AndrONVIFDevice extends JNIObject implements Serializable/*implements Parcelable*/ {
     public static final int STATE_AUTHENTICATED_MASK = 1;
     public static final int STATE_SCOPE_MASK = 2;
+    public static final int STATE_SNAP_MASK = 4;
 
     private final MutableLiveData<Integer> stateflags = new MutableLiveData<>();
 
@@ -32,11 +33,14 @@ public class AndrONVIFDevice extends JNIObject implements Serializable/*implemen
     private static native int authenticate(long pointer);
     //Not FastNative because of slow IO calls
     private static native long fetchScopes(long pointer);
+    //Not FastNative because of slow IO calls
+    private static native long fetchSnapshot(long pointer, int profile_index);
 
     private final String url;
     private String location = null;
     private String hardware = null;
     private String name = null;
+    private AndrONVIFSnapshot snapshot = null;
 
     public AndrONVIFDevice(String url) {
         super(nativeNew(url));
@@ -61,6 +65,20 @@ public class AndrONVIFDevice extends JNIObject implements Serializable/*implemen
 
     public void setCredentials(String username, String password){
         setCredentials(this.pointer_address,username,password);
+    }
+
+    public AndrONVIFSnapshot getSnapshot(){
+        return this.snapshot;
+    }
+
+    public AndrONVIFSnapshot fetchSnapshot(){
+        //TODO Handling multiple profiles
+        if(snapshot != null){
+            snapshot.unref();
+            this.snapshot = null;
+        }
+        this.snapshot = new AndrONVIFSnapshot(fetchSnapshot(this.pointer_address,0));
+        return this.snapshot;
     }
 
     public int getPort(){
@@ -111,11 +129,22 @@ public class AndrONVIFDevice extends JNIObject implements Serializable/*implemen
 
     @Override
     public boolean equals(Object obj) {
+        if(obj == null) return false;
+        if(this == obj) return true;
+
         if(this.getClass().isInstance(obj)){
             AndrONVIFDevice devobj = (AndrONVIFDevice) obj;
             //TODO handle this.url null
             return this.url.equals(devobj.url);
         }
         return false;
+    }
+
+    @Override
+    public void destroyed(){
+        if(this.snapshot != null){
+            this.snapshot.unref();
+            this.snapshot = null;
+        }
     }
 }

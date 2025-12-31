@@ -36,7 +36,10 @@ public abstract class JNIObject {
         }
         Log.d(this.getClass().getSimpleName(),"unref");
         object_unref(this.pointer_address);
-        if(--inner_ref == 0) this.pointer_address = 0;
+        if(--inner_ref == 0) {
+            this.pointer_address = 0;
+            this.destroyed();
+        }
     }
 
     public void free(){
@@ -47,4 +50,6 @@ public abstract class JNIObject {
         Log.d(this.getClass().getSimpleName(),"free");
         native_free(this.pointer_address);
     }
+
+    protected void destroyed(){}
 }

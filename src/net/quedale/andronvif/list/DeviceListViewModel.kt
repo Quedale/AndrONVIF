@@ -6,10 +6,10 @@ import androidx.annotation.MainThread
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
-import androidx.lifecycle.viewModelScope
 import androidx.room.Room
-import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.quedale.andronvif.db.AndrONVIFDatabase
@@ -27,7 +27,6 @@ class DeviceListViewModel(application: Application) : AbstractModel<DeviceListVi
         DONE
     }
 
-    private val renderedDevices: MutableList<AndrONVIFDevice> = ArrayList()
     private val prepostDevices: MutableList<AndrONVIFDevice> = ArrayList()
     private val devices = MutableLiveData<MutableList<AndrONVIFDevice>>()
 
@@ -51,6 +50,9 @@ class DeviceListViewModel(application: Application) : AbstractModel<DeviceListVi
 
         newlist.add(device)
         devices.value = newlist
+        kotlinx.coroutines.MainScope().launch {
+            initDevice(device)
+        }
     }
 
     fun setDevices(devices: MutableList<AndrONVIFDevice>?) {
@@ -91,79 +93,105 @@ class DeviceListViewModel(application: Application) : AbstractModel<DeviceListVi
         prepostDevices.addAll(devices)
         this.devices.postValue(prepostDevices)
     }
+    fun CoroutineScope.initDevice(device: AndrONVIFDevice){
+        launch(Dispatchers.IO){
+            when (val scopefault = device.fetchScopes()) {
+                JNISoapObject.SoapFault.SOAP_FAULT_NONE -> {
+                    withContext(Dispatchers.Main) {
+                        device.setState(AndrONVIFDevice.STATE_SCOPE_MASK)
+                    }
+                }
+                else -> { // TODO Error handling
+                    Log.d("DeviceListViewModel", "Failed to fetch scopes " + scopefault + " : " + device.url)
+                }
+            }
+        }
+        launch(Dispatchers.IO){
+            val snapshot = device.fetchSnapshot()
+            when (val snapfault = snapshot.fault) {
+                JNISoapObject.SoapFault.SOAP_FAULT_NONE -> {
+                    withContext(Dispatchers.Main) {
+                        device.setState(AndrONVIFDevice.STATE_SNAP_MASK)
+                    }
+                }
+                else -> { // TODO Error handling
+                    Log.d("DeviceListViewModel", "Failed to fetch snapshot " + snapfault + " : " + device.url)
+                }
+            }
+        }
+    }
 
-    @OptIn(DelicateCoroutinesApi::class)
+    fun CoroutineScope.authDevice(device: AndrONVIFDevice){
+        launch {
+            when (val fault = device.authenticate()) {
+                JNISoapObject.SoapFault.SOAP_FAULT_NONE -> {
+                    withContext(Dispatchers.Main) {
+                        device.setState(AndrONVIFDevice.STATE_AUTHENTICATED_MASK)
+                    }
+                    initDevice(device)
+                }
+
+                else -> { // TODO Error handling
+                    Log.d(
+                        "DeviceListViewModel",
+                        "Failed to authenticate device " + fault + " : " + device.url
+                    )
+                }
+            }
+        }
+    }
+
+    fun extractDevicesFromDB():MutableList<AndrONVIFDevice>{
+        //Extract data from application DB
+        val db = Room.databaseBuilder(
+            getApplication(),
+            AndrONVIFDatabase::class.java,
+            "devices"
+        ).build()
+        val dao = db.deviceDao()
+        val dbdevices = dao.getAll()
+
+        var foundDevice: AndrONVIFDevice? = null
+        val androdevices: MutableList<AndrONVIFDevice> = ArrayList()
+        for (device in dbdevices) {
+            val dbdevUrl = convertDBDeviceToString(device)
+            for (existingDev in prepostDevices) {
+                if (existingDev.url.equals(dbdevUrl)) {
+                    foundDevice = existingDev
+                    break
+                }
+            }
+
+            if (foundDevice == null) {
+                val newdev = AndrONVIFDevice(dbdevUrl)
+                newdev.setCredentials(device.username, device.password)
+                androdevices.add(newdev)
+            } else {
+                Log.d("DeviceListViewModel", "Device already added $dbdevUrl")
+            }
+        }
+        db.close()
+
+        return androdevices
+    }
+
     fun start(){
         setState(State.INITIALIZING)
-
-//        val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-//        GlobalScope.launch {
-//        viewModelScope.launch(Dispatchers.IO) {
-//        applicationScope.launch {
         kotlinx.coroutines.MainScope().launch(Dispatchers.IO) { //Launching with ApplicationScope since this list is the primary model
-            setState(State.LOADING)
+            coroutineScope {
+                setState(State.LOADING)
 
-            //Extract data from application DB
-            val db = Room.databaseBuilder(
-                getApplication(),
-                AndrONVIFDatabase::class.java,
-                "devices"
-            ).build()
-            val dao = db.deviceDao()
-            val dbdevices = dao.getAll()
+                val androdevices = extractDevicesFromDB()
 
-            var deviceAlreadyFound = false
-            val androdevices: MutableList<AndrONVIFDevice> = ArrayList()
-            for (device in dbdevices) {
-                val dbdevUrl = convertDBDeviceToString(device)
-                for(existingDev in prepostDevices){
-                    if(existingDev.url.equals(dbdevUrl)){
-                        deviceAlreadyFound = true
-                        break
-                    }
+                //Initialize native devices
+                for (androdev in androdevices) {
+                    authDevice(androdev)
                 }
 
-                if(!deviceAlreadyFound){
-                    val newdev = AndrONVIFDevice(dbdevUrl)
-                    newdev.setCredentials(device.username, device.password)
-                    androdevices.add(newdev)
-                } else {
-                    Log.d("NewDeviceListViewModel", "Device already added $dbdevUrl")
+                //The loop above should be fast enough that adding device individually would be irrelevant
+                if (androdevices.isNotEmpty()) {
+                    setDevices(androdevices)
                 }
-            }
-            db.close()
-
-            //Initialize native devices
-            for (androdev in androdevices) {
-                launch { // Launching authentication on ApplicationScope so that devices fully setup for all views
-                    when (val fault = androdev.authenticate()) {
-                        JNISoapObject.SoapFault.SOAP_FAULT_NONE -> {
-                            withContext(Dispatchers.Main) {
-                                androdev.setState(AndrONVIFDevice.STATE_AUTHENTICATED_MASK)
-                            }
-                            viewModelScope.launch(Dispatchers.IO){ //Launching using ViewModelScope because the OnvifScopes are only necessary for the DevicePreview
-                                when (val scopefault = androdev.fetchScopes()) {
-                                    JNISoapObject.SoapFault.SOAP_FAULT_NONE -> {
-                                        withContext(Dispatchers.Main) {
-                                            androdev.setState(AndrONVIFDevice.STATE_SCOPE_MASK)
-                                        }
-                                    }
-                                    else -> { // TODO Error handling
-                                        Log.d("NewDeviceListViewModel", "Failed to fetch scopes " + scopefault + " : " + androdev.url)
-                                    }
-                                }
-                            }
-                        }
-                        else -> { // TODO Error handling
-                            Log.d("NewDeviceListViewModel", "Failed to authenticate device " + fault + " : " + androdev.url)
-                        }
-                    }
-                }
-            }
-
-            //The loop above should be fast enough that adding device individually would be irrelevant
-            if(androdevices.isNotEmpty()){
-                setDevices(androdevices)
             }
             setState(State.DONE)
         }
@@ -183,25 +211,12 @@ class DeviceListViewModel(application: Application) : AbstractModel<DeviceListVi
         return builder.toString()
     }
 
-    fun deviceRendered(device: AndrONVIFDevice?) {
-        renderedDevices.add(device!!)
-    }
-
-    fun isDeviceRendered(device: AndrONVIFDevice?): Boolean {
-        return renderedDevices.contains(device)
-    }
-
-    fun resetRendered() {
-        renderedDevices.clear()
-    }
-
     override fun onCleared() {
         super.onCleared()
         for (device in prepostDevices) {
             device.unref()
         }
         prepostDevices.clear()
-        renderedDevices.clear()
         devices.value = prepostDevices
     }
 }
