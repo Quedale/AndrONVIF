@@ -9,21 +9,17 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="8dp">
-        <androidx.constraintlayout.widget.ConstraintLayout
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/dbfetch_progress"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:padding="@dimen/top_padding">
-            <com.google.android.material.progressindicator.LinearProgressIndicator
-                android:id="@+id/dbfetch_progress"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent"
-                android:indeterminate="true"
-                android:max="1000"/>
-        </androidx.constraintlayout.widget.ConstraintLayout>
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:indeterminate="true"
+            android:padding="@dimen/top_padding"
+            android:max="1000"/>
         <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent">

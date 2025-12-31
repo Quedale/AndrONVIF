@@ -22,7 +22,6 @@ class DiscoveryModel(application: Application) : AbstractModel<DiscoveryModel.St
         DONE
     }
 
-    private val renderedDevices: MutableList<AndrONVIFDevice> = ArrayList()
     private val prepostDevices: MutableList<AndrONVIFDevice> = ArrayList()
     private val devices = MutableLiveData<MutableList<AndrONVIFDevice>>()
 
@@ -31,14 +30,6 @@ class DiscoveryModel(application: Application) : AbstractModel<DiscoveryModel.St
         observer: Observer<in MutableList<AndrONVIFDevice>>
     ) {
         devices.observe(owner, observer)
-    }
-
-    fun deviceRendered(device: AndrONVIFDevice) {
-        renderedDevices.add(device)
-    }
-
-    fun isDeviceRendered(device: AndrONVIFDevice?): Boolean {
-        return renderedDevices.contains(device)
     }
 
     fun addDevice(device: AndrONVIFDevice) {
@@ -57,12 +48,7 @@ class DiscoveryModel(application: Application) : AbstractModel<DiscoveryModel.St
             device.unref()
         }
         prepostDevices.clear()
-        renderedDevices.clear()
         devices.value = prepostDevices
-    }
-
-    fun resetRendered() {
-        renderedDevices.clear()
     }
 
     fun start() {

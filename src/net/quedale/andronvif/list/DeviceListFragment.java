@@ -13,6 +13,7 @@ import androidx.navigation.fragment.NavHostFragment;
 
 import net.quedale.andronvif.R;
 import net.quedale.andronvif.databinding.DeviceListFragmentBinding;
+import net.quedale.andronvif.utils.DeviceListAdapter;
 
 public class DeviceListFragment extends Fragment {
 
@@ -27,7 +28,7 @@ public class DeviceListFragment extends Fragment {
         binding = DeviceListFragmentBinding.inflate(inflater, container, false);
         Log.d("DeviceListFragment", "onCreateView");
 
-        DevicePreviewAdapter adapter = new DevicePreviewAdapter(NavHostFragment.findNavController(DeviceListFragment.this));
+        DeviceListAdapter<DevicePreview> adapter = getDevicePreviewAbstractDeviceListAdapter();
         binding.myRecyclerView.setAdapter(adapter);
 
         model = new ViewModelProvider(this.requireActivity()).get(DeviceListViewModel.class);
@@ -39,7 +40,7 @@ public class DeviceListFragment extends Fragment {
                     DeviceListFragment.this.binding.dbfetchProgress.setVisibility(View.VISIBLE);
                     break;
                 case DONE:
-                    DeviceListFragment.this.binding.dbfetchProgress.setVisibility(View.INVISIBLE);
+                    DeviceListFragment.this.binding.dbfetchProgress.setVisibility(View.GONE);
                     break;
             }
         });
@@ -50,6 +51,16 @@ public class DeviceListFragment extends Fragment {
         });
 
         return binding.getRoot();
+    }
+
+    @NonNull
+    private DeviceListAdapter<DevicePreview> getDevicePreviewAbstractDeviceListAdapter() {
+        DeviceListAdapter.DeviceViewNavigator nav = device -> {
+            net.quedale.andronvif.list.DeviceListFragmentDirections.ActionDeviceListFragmentToPlayerFragment action = net.quedale.andronvif.list.DeviceListFragmentDirections.actionDeviceListFragmentToPlayerFragment(device);
+            NavHostFragment.findNavController(DeviceListFragment.this).navigate(action);
+        };
+        DeviceListAdapter.DeviceViewSetter<DevicePreview> setter = DevicePreview::setDevice;
+        return new DeviceListAdapter<>(R.layout.device_preview,R.id.devicepreview, setter, nav);
     }
 
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {

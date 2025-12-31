@@ -6,7 +6,6 @@ import android.view.LayoutInflater;
 import android.view.SurfaceHolder;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
@@ -39,9 +38,7 @@ public class PlayerFragment  extends Fragment {
 
             player.setDevice(device);
 
-            TextView tv = new TextView(this.requireContext());
-            tv.setText("Playing device : " + device.getUrl());
-            binding.listlayout.addView(tv);
+            binding.deviceOnvifUrl.setText("Playing device : " + device.getUrl());
 
             SurfaceHolder sh = binding.surfaceVideo.getHolder();
             sh.addCallback(player);

@@ -10,10 +10,6 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="8dp">
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:padding="@dimen/top_padding">
         <com.google.android.material.progressindicator.LinearProgressIndicator
             android:id="@+id/discovery_progress"
             android:layout_width="match_parent"
@@ -23,18 +19,19 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
             android:indeterminate="true"
+            android:padding="@dimen/top_padding"
             android:max="1000"/>
-    </androidx.constraintlayout.widget.ConstraintLayout>
         <androidx.core.widget.NestedScrollView
-            xmlns:tools="http://schemas.android.com/tools"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
-            <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                android:id="@+id/deviceList"
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/discovery_recycler_view"
+                android:clipToPadding="false"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:orientation="vertical"
-                android:layout_width="fill_parent"
-                android:layout_height="fill_parent">
-            </LinearLayout>
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager">
+            </androidx.recyclerview.widget.RecyclerView>
         </androidx.core.widget.NestedScrollView>
     </LinearLayout>
     <com.google.android.material.floatingactionbutton.FloatingActionButton

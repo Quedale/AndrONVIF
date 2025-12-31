@@ -1,7 +1,6 @@
 package net.quedale.andronvif.discovery;
 
 import android.os.Bundle;
-import android.os.CountDownTimer;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,13 +15,15 @@ import net.quedale.andronvif.jni.AndrONVIFDevice;
 import net.quedale.andronvif.R;
 import net.quedale.andronvif.databinding.DeviceDiscoveryFragmentBinding;
 import net.quedale.andronvif.list.DeviceListViewModel;
+import net.quedale.andronvif.utils.DeviceListAdapter;
+import net.quedale.andronvif.utils.ProgressBarTimer;
 
 import java.util.List;
 
 public class DiscoveryFragment extends Fragment {
 
     private DeviceDiscoveryFragmentBinding binding;
-    private CountDownTimer countDownTimer;
+    private ProgressBarTimer countDownTimer;
     private DeviceListViewModel activity_model;
     private DiscoveryModel model;
 
@@ -32,23 +33,14 @@ public class DiscoveryFragment extends Fragment {
             Bundle savedInstanceState
     ) {
         binding = DeviceDiscoveryFragmentBinding.inflate(inflater, container, false);
+
+        DeviceListAdapter<DiscoveryDeviceRow> adapter = getDevicePreviewAbstractDeviceListAdapter();
+        binding.discoveryRecyclerView.setAdapter(adapter);
+
         //TODO use udp retrycoount * timeout
         int totalDurationMillis = 2 * 2000;
         int intervalMillis = 10;
-        countDownTimer = new CountDownTimer(totalDurationMillis, intervalMillis) {
-            @Override
-            public void onTick(long millisUntilFinished) {
-                int max = DiscoveryFragment.this.binding.discoveryProgress.getMax();
-                long progress = totalDurationMillis - millisUntilFinished;
-                int percentage = (int) ((progress * max) / totalDurationMillis);
-                DiscoveryFragment.this.binding.discoveryProgress.setProgress(percentage);
-            }
-
-            @Override
-            public void onFinish() {
-                DiscoveryFragment.this.binding.discoveryProgress.setProgress(DiscoveryFragment.this.binding.discoveryProgress.getMax());
-            }
-        };
+        countDownTimer = new ProgressBarTimer(this.binding.discoveryProgress,totalDurationMillis,intervalMillis);
 
         activity_model = new ViewModelProvider(this.requireActivity()).get(DeviceListViewModel.class);
         model = new ViewModelProvider(this).get(DiscoveryModel.class);
@@ -59,15 +51,12 @@ public class DiscoveryFragment extends Fragment {
             switch(newstate){
                 case INITIALIZING:
                     DiscoveryFragment.this.binding.discoveryProgress.setVisibility(View.VISIBLE);
-                    DiscoveryFragment.this.binding.discoveryProgress.setIndeterminate(true);
                     break;
                 case LOADING:
-                    DiscoveryFragment.this.binding.discoveryProgress.setVisibility(View.VISIBLE);
-                    DiscoveryFragment.this.binding.discoveryProgress.setIndeterminate(false);
-                    DiscoveryFragment.this.countDownTimer.start();
+                    DiscoveryFragment.this.countDownTimer.startProgress();
                     break;
                 case DONE:
-                    DiscoveryFragment.this.binding.discoveryProgress.setVisibility(View.INVISIBLE);
+                    DiscoveryFragment.this.binding.discoveryProgress.setVisibility(View.GONE);
                     break;
             }
         });
@@ -76,28 +65,11 @@ public class DiscoveryFragment extends Fragment {
             Log.d("DeviceDiscoveryFragment", "modelChanged!! " + newlist.size());
             for(AndrONVIFDevice device : newlist){
                 List<AndrONVIFDevice> activiyDevices = activity_model.getDevices();
-                if(model.isDeviceRendered(device)){
-                    Log.d(DiscoveryFragment.class.getSimpleName(),"Device already rendered : " + model.isDeviceRendered(device));
-                    continue;
-                }
-
                 if(activiyDevices != null && activiyDevices.contains(device)){
                     Log.d(DiscoveryFragment.class.getSimpleName(),"Device already added : " + activiyDevices.contains(device));
                     continue;
                 }
-
-                Log.d("DeviceDiscoveryFragment", "Adding device to UI : " + device.getUrl());
-                View device_view = inflater.inflate(R.layout.discovered_device, binding.deviceList, false);
-                DiscoveryDeviceRow device_row = device_view.findViewById(R.id.devicerow);
-                device_row.setDevice(device);
-                device_view.setOnClickListener(v -> {
-                    Log.d(DiscoveryDeviceRow.class.getSimpleName(),"Clicked " + device.getUrl());
-                    DiscoveryFragmentDirections.ActionDeviceDiscoveryFragmentToAddDeviceFragment action = DiscoveryFragmentDirections.actionDeviceDiscoveryFragmentToAddDeviceFragment();
-                    action.setDevice(device);
-                    NavHostFragment.findNavController(DiscoveryFragment.this).navigate(action);
-                });
-                binding.deviceList.addView(device_view);
-                model.deviceRendered(device);
+                adapter.addDevice(device);
             }
         });
 
@@ -106,10 +78,20 @@ public class DiscoveryFragment extends Fragment {
         return binding.getRoot();
     }
 
+    @NonNull
+    private DeviceListAdapter<DiscoveryDeviceRow> getDevicePreviewAbstractDeviceListAdapter() {
+        DeviceListAdapter.DeviceViewNavigator nav = device -> {
+            DiscoveryFragmentDirections.ActionDeviceDiscoveryFragmentToAddDeviceFragment action = DiscoveryFragmentDirections.actionDeviceDiscoveryFragmentToAddDeviceFragment();
+            action.setDevice(device);
+            NavHostFragment.findNavController(DiscoveryFragment.this).navigate(action);
+        };
+        DeviceListAdapter.DeviceViewSetter<DiscoveryDeviceRow> setter = DiscoveryDeviceRow::setDevice;
+        return new DeviceListAdapter<>(R.layout.discovered_device,R.id.devicerow, setter, nav);
+    }
+
     @Override
     public void onDestroyView() {
         Log.d(DiscoveryFragment.class.getSimpleName(),"onDestroyView");
-        model.resetRendered();
         super.onDestroyView();
     }
 
@@ -123,7 +105,7 @@ public class DiscoveryFragment extends Fragment {
     @Override
     public void onStop() {
         Log.d(DiscoveryFragment.class.getSimpleName(),"onStop");
-        countDownTimer.cancel();
+        countDownTimer.stopProgress();
         super.onStop();
     }
 }
