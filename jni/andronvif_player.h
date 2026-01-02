@@ -18,6 +18,6 @@ struct _AndrONVIFPlayerClass {
     GObjectClass parent_class;
 };
 
-void AndrONVIFPlayerNew__register_jni_class(JNIEnv *env);
+void AndrONVIFPlayer__register_jni_class(JavaVM * vm, JNIEnv *env);
 
 #endif //ANDRONVIF_ANDRONVIF_PLAYER_H

@@ -6,10 +6,15 @@ import android.view.LayoutInflater;
 import android.view.SurfaceHolder;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 
 import androidx.annotation.NonNull;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.fragment.app.Fragment;
 
+import net.quedale.andronvif.R;
 import net.quedale.andronvif.discovery.DiscoveryFragment;
 import net.quedale.andronvif.jni.AndrONVIFDevice;
 import net.quedale.andronvif.databinding.PlayerFragmentBinding;
@@ -26,7 +31,14 @@ public class PlayerFragment  extends Fragment {
     ) {
         binding = PlayerFragmentBinding.inflate(inflater, container, false);
 
-        player = new AndrONVIFPlayer(this.requireContext());
+        player = new AndrONVIFPlayer(binding.surfaceVideo,binding.deviceOnvifUrl);
+        
+        //Set immersive mode
+        Window window = this.requireActivity().getWindow();
+        WindowInsetsControllerCompat windowInsetsController =
+                WindowCompat.getInsetsController(window, window.getDecorView());
+        windowInsetsController.setSystemBarsBehavior(WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+        windowInsetsController.hide(WindowInsetsCompat.Type.systemBars());
 
         return binding.getRoot();
     }
@@ -38,7 +50,7 @@ public class PlayerFragment  extends Fragment {
 
             player.setDevice(device);
 
-            binding.deviceOnvifUrl.setText("Playing device : " + device.getUrl());
+            binding.deviceOnvifUrl.setText(getString(R.string.playing_device_message) + device.getUrl());
 
             SurfaceHolder sh = binding.surfaceVideo.getHolder();
             sh.addCallback(player);
@@ -64,6 +76,12 @@ public class PlayerFragment  extends Fragment {
     @Override
     public void onDestroyView() { //TODO Check if detach is better
         Log.d(DiscoveryFragment.class.getSimpleName(),"onDestroyView");
+        //Unset immersive mode
+        Window window = this.requireActivity().getWindow();
+        WindowInsetsControllerCompat windowInsetsController =
+                WindowCompat.getInsetsController(window, window.getDecorView());
+        windowInsetsController.setSystemBarsBehavior(WindowInsetsControllerCompat.BEHAVIOR_DEFAULT);
+                windowInsetsController.show(WindowInsetsCompat.Type.systemBars());
         player.unref();
         super.onDestroyView();
     }

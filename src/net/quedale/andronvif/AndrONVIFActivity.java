@@ -18,11 +18,9 @@ public class AndrONVIFActivity extends AppCompatActivity {
 
         MainBinding binding = MainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-        AndrONVIFPlayer.nativeInit();
     }
 
     protected void onDestroy() {
-        AndrONVIFPlayer.nativeFinalize();
         super.onDestroy();
     }
 }

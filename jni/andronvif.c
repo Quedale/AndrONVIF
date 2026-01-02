@@ -54,7 +54,7 @@ jint JNI_OnLoad(JavaVM *vm, void *reserved) {
         return 0;
     }
 
-    AndrONVIFPlayerNew__register_jni_class(env);
+    AndrONVIFPlayer__register_jni_class(vm, env);
     JNIObject__register_jni_class(env);
     AndrONVIFDevice__register_jni_class(env);
     AndrONVIFScopes__register_jni_class(env);
