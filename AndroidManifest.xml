@@ -12,7 +12,9 @@
                  android:icon="@drawable/gstreamer_logo_1"
                  android:theme="@style/Theme.AndrONVIF">
         <activity android:name="net.quedale.andronvif.AndrONVIFActivity"
-                  android:exported="true">
+            android:supportsPictureInPicture="true"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|keyboardHidden|orientation"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

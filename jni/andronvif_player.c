@@ -13,19 +13,31 @@ static JavaVM *java_vm;
 static jmethodID set_message_method_id;
 static jmethodID on_media_size_changed_method_id;
 
+//Data structure used to dispose data asynchronously
 typedef struct {
+    AndrONVIFPlayer * player;
+    GstElement * pipeline;
+    GMainLoop *main_loop;
+    jobject java_object;
+    OnvifDevice * device;
+} DisposeData;
+
+typedef struct {
+    //Each player instance has its own loop
     pthread_t main_thread;
     GMainContext *context;  /* GLib context used to run the main loop */
     GMainLoop *main_loop;   /* GLib main loop */
-    jobject java_object;    /* Parent java object */
 
+    jobject java_object;    /* Parent java object */
+    OnvifDevice * device;   /* ONVIF device to playe */
+
+    //Gstreamer related elements
     GstElement *pipeline;   /* The running pipeline */
     GstElement *video_sink; /* The video sink element which receives VideoOverlay commands */
     GstState state;               /* Current pipeline state */
     GstState target_state;        /* Desired pipeline state, to be set once buffering is complete */
     gboolean is_live;             /* Live streams do not use buffering */
     ANativeWindow *native_window; /* The Android native window where video will be rendered */
-    OnvifDevice * device;
 } AndrONVIFPlayerPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (AndrONVIFPlayer, AndrONVIFPlayer_, G_TYPE_OBJECT)
@@ -156,7 +168,7 @@ state_changed_cb (GstBus * bus, GstMessage * msg, AndrONVIFPlayer * player){
             priv->is_live = FALSE;
 
        /* The Ready to Paused state change is particularly interesting: */
-       if (old_state == GST_STATE_READY && new_state == GST_STATE_PAUSED) {
+       if (old_state == GST_STATE_READY && new_state == GST_STATE_PAUSED && priv->video_sink) {
            /* By now the sink already knows the media size */
            check_media_size (player);
        }
@@ -210,7 +222,7 @@ buffering_cb (GstBus * bus, GstMessage * msg, AndrONVIFPlayer * player){
 }
 
 static void
-AndrONVIFPlayer__on_decoder_pad_added (GstElement *element, GstPad *new_pad, GstElement * converter){
+on_decoder_pad_added_cb (GstElement *element, GstPad *new_pad, GstElement * converter){
     GstPad *sinkpad;
     GstPadLinkReturn ret;
     GstCaps * caps;
@@ -260,7 +272,7 @@ AndrONVIFPlayer__create_video_pad(){
         !vdecoder ||
         !videoconvert ||
         !sink) {
-        C_ERROR ("One of the video elements wasn't created... Exiting\n");
+        C_ERROR ("One of the video elements wasn't created... Exiting");
         return NULL;
     }
 
@@ -271,14 +283,13 @@ AndrONVIFPlayer__create_video_pad(){
                       sink, NULL);
 
     // Link confirmation
-    if (!gst_element_link_many (videoconvert,
-                                sink, NULL)){
-        C_WARN ("Linking video part (A)-2 Fail...");
+    if (!gst_element_link_many (videoconvert, sink, NULL)){
+        C_WARN ("Failed to link video converter to sink");
         return NULL;
     }
 
     // Dynamic Pad Creation
-    if(! g_signal_connect (vdecoder, "pad-added", G_CALLBACK (AndrONVIFPlayer__on_decoder_pad_added),videoconvert)){
+    if(! g_signal_connect (vdecoder, "pad-added", G_CALLBACK (on_decoder_pad_added_cb),videoconvert)){
         C_ERROR ("Unabled to connect \"pad-added\" signal to video decoder.");
         return NULL;
     }
@@ -286,11 +297,11 @@ AndrONVIFPlayer__create_video_pad(){
     pad = gst_element_get_static_pad (vdecoder, "sink");
     if (!pad) {
         // TODO gst_object_unref
-        C_ERROR("unable to get decoder static sink pad");
+        C_ERROR("Unable to get video decoder static sink pad");
         return NULL;
     }
 
-    ghostpad = gst_ghost_pad_new ("bin_sink", pad);
+    ghostpad = gst_ghost_pad_new ("sink", pad);
     gst_element_add_pad (video_bin, ghostpad);
     gst_object_unref (pad);
     return video_bin;
@@ -328,17 +339,14 @@ AndrONVIFPlayer__create_audio_pad(){
                       level,
                       sink, NULL);
 
-
     // Link confirmation
-    if (!gst_element_link_many (convert,
-                                level,
-                                sink, NULL)){
-        C_WARN ("Linking audio part (A)-2 Fail...");
+    if (!gst_element_link_many (convert,level, sink, NULL)){
+        C_WARN ("Failed to link audio concverter, level and sink.");
         return NULL;
     }
 
     // Dynamic Pad Creation
-    if(! g_signal_connect (decoder, "pad-added", G_CALLBACK (AndrONVIFPlayer__on_decoder_pad_added),convert)){
+    if(! g_signal_connect (decoder, "pad-added", G_CALLBACK (on_decoder_pad_added_cb),convert)){
         C_ERROR ("Unabled to connect \"pad-added\" signal to audio decoder.");
         return NULL;
     }
@@ -346,11 +354,11 @@ AndrONVIFPlayer__create_audio_pad(){
     pad = gst_element_get_static_pad (decoder, "sink");
     if (!pad) {
         // TODO gst_object_unref
-        C_ERROR("unable to get decoder static sink pad");
+        C_ERROR("Unable to get audio decoder static sink pad");
         return NULL;
     }
 
-    ghostpad = gst_ghost_pad_new ("bin_sink", pad);
+    ghostpad = gst_ghost_pad_new ("sink", pad);
     gst_element_add_pad (audio_bin, ghostpad);
     gst_object_unref (pad);
 
@@ -388,7 +396,7 @@ AndrONVIFPlayer__on_rtsp_pad_added(GstElement *element, GstPad *new_pad, AndrONV
 
     if(new_bin){
         gst_bin_add (GST_BIN (priv->pipeline), new_bin);
-        GstPad * sink_pad = gst_element_get_static_pad (new_bin, "bin_sink");
+        GstPad * sink_pad = gst_element_get_static_pad (new_bin, "sink");
         GstPadLinkReturn pad_ret = gst_pad_link (new_pad, sink_pad);
         if (GST_PAD_LINK_FAILED (pad_ret)) {
             C_ERROR ("failed to link video bin dynamically '%s' to '%s'",GST_ELEMENT_NAME(element),GST_ELEMENT_NAME(new_bin));
@@ -569,8 +577,30 @@ progress_cb(GstMessage * msg, AndrONVIFPlayer* self){
 }
 
 static void
-latency_cb(GstBin *bin) {
+latency_cb(AndrONVIFPlayer* self) {
+    AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (self);
+    gboolean live;
+    GstClockTime min_latency, max_latency;
+    C_DEBUG("Recalculating latency...");
+    if(!gst_bin_recalculate_latency(GST_BIN(priv->pipeline))){
+        C_WARN("Latency recalculation failed!");
+        return;
+    };
+    /* Create a new latency query */
+    GstQuery *query = gst_query_new_latency();
 
+    /* Query the element (or pipeline) */
+    if (gst_element_query(priv->pipeline, query)) {
+        /* Parse the latency query results */
+        gst_query_parse_latency(query, &live, &min_latency, &max_latency);
+
+        C_DEBUG("Latency Query Result:");
+        C_DEBUG("\tIs live pipeline: %s", live ? "TRUE" : "FALSE");
+        C_DEBUG("\tMinimum latency: %" GST_TIME_FORMAT, GST_TIME_ARGS(min_latency));
+        C_DEBUG("\tMaximum latency: %" GST_TIME_FORMAT, GST_TIME_ARGS(max_latency));
+    } else {
+        C_DEBUG("Latency query failed\n");
+    }
 }
 
 static gboolean
@@ -623,31 +653,9 @@ async_bus_call(GstBus *bus, GstMessage *msg, AndrONVIFPlayer* self) {
             C_TRACE("New stream status : type[%s] element[%s]", gst_stream_status_get_name(type), GST_ELEMENT_NAME(owner));
             break;
         }
-        case GST_MESSAGE_LATENCY: {
-            gboolean live;
-            GstClockTime min_latency, max_latency;
-            C_DEBUG("recalculating latency");
-            if(!gst_bin_recalculate_latency(GST_BIN(priv->pipeline))){
-                C_WARN("Latency recalculation failed!");
-                return GST_BUS_PASS;
-            };
-            /* Create a new latency query */
-            GstQuery *query = gst_query_new_latency();
-
-            /* Query the element (or pipeline) */
-            if (gst_element_query(priv->pipeline, query)) {
-                /* Parse the latency query results */
-                gst_query_parse_latency(query, &live, &min_latency, &max_latency);
-
-                C_DEBUG("Latency Query Result:");
-                C_DEBUG("Is live pipeline: %s", live ? "TRUE" : "FALSE");
-                C_DEBUG("Minimum latency: %" GST_TIME_FORMAT, GST_TIME_ARGS(min_latency));
-                C_DEBUG("Maximum latency: %" GST_TIME_FORMAT, GST_TIME_ARGS(max_latency));
-            } else {
-                C_DEBUG("Latency query failed\n");
-            }
-            return GST_BUS_PASS;
-        }
+        case GST_MESSAGE_LATENCY:
+            latency_cb(self);
+            break;
         case GST_MESSAGE_TAG:
             C_TRACE("new tags");
             break;
@@ -754,21 +762,22 @@ mainloop_function (void *userdata) {
     AndrONVIFPlayer * self = ANDRONVIF_PLAYER(userdata);
     AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (self);
 
-    priv->context = g_main_context_new ();
+    GMainContext *context = g_main_context_new ();
+    priv->context = context;
     // g_main_context_push_thread_default (priv->context);
 
     /* Create a GLib Main Loop and set it to run */
     C_DEBUG ("Entering main loop...");
-    priv->main_loop = g_main_loop_new (priv->context, FALSE);
+    GMainLoop *main_loop = g_main_loop_new (context, FALSE);
+    priv->main_loop = main_loop;
 
-    g_main_loop_run (priv->main_loop);
+    g_main_loop_run (main_loop);
     C_DEBUG ("Exited main loop");
-    g_main_loop_unref (priv->main_loop);
-    priv->main_loop = NULL;
+    g_main_loop_unref (main_loop);
 
     /* Free resources */
     // g_main_context_pop_thread_default(priv->context);
-    g_main_context_unref (priv->context);
+    g_main_context_unref (context);
 
     return NULL;
 }
@@ -796,25 +805,27 @@ AndrONVIFPlayer__idle_pipeline_cleanup(GstElement * pipeline){
     return FALSE;
 }
 
-static void
-AndrONVIFPlayer__stop(AndrONVIFPlayer * self) {
-    C_DEBUG("AndrONVIFPlayer__stop");
+static gboolean
+AndrONVIFPlayer__idle_stop(AndrONVIFPlayer * self) {
+    C_DEBUG("AndrONVIFPlayer__idle_stop");
     AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (self);
 
     GstElement * pipeline = priv->pipeline;
     priv->pipeline = NULL;
     priv->video_sink = NULL;
-
     if(pipeline) {
         priv->target_state = GST_STATE_NULL;
+        C_DEBUG("Setting pipeline state to null.");
         priv->is_live |= (gst_element_set_state (pipeline, GST_STATE_NULL) == GST_STATE_CHANGE_NO_PREROLL);
         /*
          * Clean up invoke on the mainloop because disposing the pipeline needs
          * to stop first and changing the state occurs on the mainloop
          */
-        g_main_context_invoke(priv->context,G_SOURCE_FUNC(AndrONVIFPlayer__idle_pipeline_cleanup),pipeline);
+        C_DEBUG("Pipeline clean up after stop.");
+        gst_object_unref (pipeline);
     }
 
+    return FALSE;
 }
 
 static JNIEXPORT void JNICALL
@@ -822,7 +833,10 @@ AndrONVIFPlayer__nativeStop(jlong pointer) {
     C_DEBUG("AndrONVIFPlayer__nativeStop");
     g_return_if_fail(pointer > 0);
     g_return_if_fail(ANDRONVIF_IS_PLAYER((void*)pointer));
-    AndrONVIFPlayer__stop(ANDRONVIF_PLAYER((void*)pointer));
+    AndrONVIFPlayer * self = ANDRONVIF_PLAYER((void*)pointer);
+    AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (self);
+    if(!priv->context) C_FIXME("Invalid context. Can't stop.");
+    g_main_context_invoke(priv->context,G_SOURCE_FUNC(AndrONVIFPlayer__idle_stop),self);
 }
 
 static gboolean
@@ -846,6 +860,7 @@ AndrONVIFPlayer__play(jlong pointer) {
         return;
     }
 
+    if(!priv->context) C_FIXME("Invalid context. Can't play.");
     priv->target_state = GST_STATE_PLAYING;
     g_main_context_invoke(priv->context,G_SOURCE_FUNC(AndrONVIFPlayer__idle_play),self);
 }
@@ -859,45 +874,65 @@ AndrONVIFPlayer__set_device(jlong self_pointer, jlong device_pointer){
     g_return_if_fail(ONVIF_IS_DEVICE((void*)device_pointer));
 
     AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (ANDRONVIF_PLAYER((void*)self_pointer));
-    priv->device = ONVIF_DEVICE((void*)device_pointer);
+    OnvifDevice * new_device = ONVIF_DEVICE((void*)device_pointer);
+
+    if(priv->device == new_device) return;
+
+    //Removing reference if another device is added
+    if(priv->device) g_object_unref(priv->device);
+    
+    priv->device = new_device;
+    g_object_ref(priv->device); //Adding reference while using it
 }
 
 static gboolean
-AndrONVIFPlayer__idle_context_cleanup(GMainLoop * loop){
+AndrONVIFPlayer__idle_dispose (DisposeData * data){
+    C_DEBUG("AndrONVIFPlayer__idle_dispose");
+    if(data->pipeline) {
+        C_FIXME("Pipeline is still valid. Should be stopped before dispose is called.");
+        gst_element_set_state (data->pipeline, GST_STATE_NULL);
+        C_FIXME("Pipeline clean up from dispose.");
+        gst_object_unref (data->pipeline);
+    }
+
     C_DEBUG ("Quitting main loop...");
-    g_main_loop_quit (loop);
+    //The mainloop will self-cleanup after quitting
+    g_main_loop_quit (data->main_loop);
+
+    C_DEBUG ("Releasing java object reference...");
+    //The main_loop terminated, there shouldn't be any usage of the java_object
+    if(data->java_object){
+        JNIEnv *env = get_jni_env ();
+        (*env)->DeleteGlobalRef (env, data->java_object);
+        data->java_object = NULL;
+    }
+    
+    C_DEBUG ("Releasing OnvifDevice reference...");
+    if(data->device){
+        g_object_unref(data->device);
+    }
+    free(data);
     return FALSE;
 }
 
 static void
 AndrONVIFPlayer__dispose (GObject *object){
     C_DEBUG("AndrONVIFPlayer__dispose");
-    AndrONVIFPlayer * self = ANDRONVIF_PLAYER(object);
-    AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (self);
-    if(priv->pipeline) {
-        C_FIXME("Pipeline is still valid. Should be stopped before dispose is called.");
-        AndrONVIFPlayer__stop(self);
-    }
+    AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (ANDRONVIF_PLAYER(object));
+    if(priv->context){
+        GMainContext *context = priv->context;
+        priv->context = NULL;
 
-    if(priv->main_loop){
-        g_main_context_invoke(priv->context,G_SOURCE_FUNC(AndrONVIFPlayer__idle_context_cleanup),priv->main_loop);
-        C_DEBUG ("Waiting for thread to finish...");
-        pthread_join (priv->main_thread, NULL);
-    }
-    // if(priv->main_loop){
-    //     C_DEBUG ("Quitting main loop...");
-    //     g_main_loop_quit (priv->main_loop);
-    //     C_DEBUG ("Waiting for thread to finish...");
-    //     pthread_join (priv->main_thread, NULL);
-    //     priv->main_loop = NULL;
-    // } else {
-    //     C_DEBUG("No mainloop started.");
-    // }
-
-    if(priv->java_object){
-        JNIEnv *env = get_jni_env ();
-        (*env)->DeleteGlobalRef (env, priv->java_object);
-        priv->java_object = NULL;
+        /*
+         * Dispatching a mainloop self-destruct call
+         * Construct data holder because "self" won't be available after this function returns
+         */
+        DisposeData * data = malloc(sizeof(DisposeData));
+        data->pipeline = priv->pipeline;
+        data->java_object = priv->java_object;
+        data->main_loop = priv->main_loop;
+        data->device = priv->device;
+        g_main_context_invoke(context,G_SOURCE_FUNC(AndrONVIFPlayer__idle_dispose),data);
     }
 
     G_OBJECT_CLASS (AndrONVIFPlayer__parent_class)->dispose (object);
@@ -931,6 +966,7 @@ AndrONVIFPlayer__surfaceChanged (JNIEnv *env, jclass klass, jlong pointer, jobje
             C_DEBUG ("New native window is the same as the previous one");
             if (priv->video_sink) {
                 gst_video_overlay_expose(GST_VIDEO_OVERLAY (priv->video_sink));
+                gst_video_overlay_expose(GST_VIDEO_OVERLAY (priv->video_sink));
             }
             return;
         } else {
@@ -938,6 +974,10 @@ AndrONVIFPlayer__surfaceChanged (JNIEnv *env, jclass klass, jlong pointer, jobje
         }
     }
     priv->native_window = new_native_window;
+    if (priv->video_sink) {
+        gst_video_overlay_set_window_handle (GST_VIDEO_OVERLAY (priv->video_sink),
+                                            (guintptr) priv->native_window);
+    }
 }
 
 static JNIEXPORT void JNICALL
@@ -951,7 +991,6 @@ AndrONVIFPlayer__nativeSurfaceDestroyed (jlong pointer) {
 
     if (priv->video_sink) {
         gst_video_overlay_set_window_handle (GST_VIDEO_OVERLAY (priv->video_sink), (guintptr)NULL);
-        gst_element_set_state (priv->pipeline, GST_STATE_READY);
     }
 
     ANativeWindow_release (priv->native_window);

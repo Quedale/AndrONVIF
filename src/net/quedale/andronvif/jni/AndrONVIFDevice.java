@@ -17,7 +17,7 @@ public class AndrONVIFDevice extends JNIObject implements Serializable/*implemen
     public static final int STATE_SCOPE_MASK = 2;
     public static final int STATE_SNAP_MASK = 4;
 
-    private final MutableLiveData<Integer> stateflags = new MutableLiveData<>();
+    private transient final MutableLiveData<Integer> stateflags = new MutableLiveData<>();
 
     @FastNative //Can't be CriticalNative because of String parameter
     private static native long nativeNew(String url);
