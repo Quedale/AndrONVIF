@@ -83,11 +83,11 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
 target_link_options(${CMAKE_PROJECT_NAME} PRIVATE "-Wl,-z,max-page-size=16384")
 
 add_library(cutils STATIC IMPORTED)
-set_target_properties(cutils PROPERTIES IMPORTED_LOCATION ${SUBPROJECTS_ROOT}/CUtils/dist/lib/libcutils.a)
+set_target_properties(cutils PROPERTIES IMPORTED_LOCATION ${SUBPROJECTS_ROOT}/CUtils/dist/${ANDROID_ABI}/lib/libcutils.a)
 add_library(libntlm STATIC IMPORTED)
-set_target_properties(libntlm PROPERTIES IMPORTED_LOCATION ${SUBPROJECTS_ROOT}/libntlm-1.8/dist/lib/libntlm.a)
+set_target_properties(libntlm PROPERTIES IMPORTED_LOCATION ${SUBPROJECTS_ROOT}/libntlm-1.8/dist/${ANDROID_ABI}/lib/libntlm.a)
 add_library(onvifsoap STATIC IMPORTED)
-set_target_properties(onvifsoap PROPERTIES IMPORTED_LOCATION ${SUBPROJECTS_ROOT}/OnvifSoapLib/dist/lib/libonvifsoap.a)
+set_target_properties(onvifsoap PROPERTIES IMPORTED_LOCATION ${SUBPROJECTS_ROOT}/OnvifSoapLib/dist/${ANDROID_ABI}/lib/libonvifsoap.a)
 
 add_library(glib STATIC IMPORTED)
 set_target_properties(glib PROPERTIES IMPORTED_LOCATION ${GSTREAMER_ROOT}/lib/libglib-2.0.a)

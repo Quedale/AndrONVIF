@@ -238,7 +238,7 @@ pullOrClone (){
 #
 ############################################
 buildMakeProject(){
-  local project srcdir prefix autogen autoreconf configure make cmakedir cmakeargs cmakeclean installargs skipbootstrap bootstrap configcustom outoftree noexit localtoolchain
+  local project srcdir prefix autogen autoreconf configure make cmakedir cmakeargs cmakeclean installargs skipbootstrap bootstrap configcustom outoftree noexit localtoolchain noabi
   local "${@}"
 
   build_start=$SECONDS
@@ -295,6 +295,13 @@ buildMakeProject(){
     fi
   fi
 
+  if [ ! -z "${noabi}" ]; then
+    innerprefix=${prefix}
+  else
+    innerprefix=${prefix}/${ANDROID_ABI}
+  fi
+  echo "${project}: corrected prefix: '${innerprefix}'" >&2
+
   if [ ! -z "${autoreconf}" ]
   then
     echo "${project}: src: ${srcdir}" >&2
@@ -321,13 +328,12 @@ buildMakeProject(){
       btype="Debug"
     fi
 
-    export LIBRARY_PATH="/home/quedale/AndroidStudioProjects/AndrONVIF/app/src/main/cpp/subprojects/zlib-1.3.1/build/dist/lib:$LIBRARY_PATH"
     cmake -G 'Unix Makefiles' \
       -DCMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE \
       -DANDROID_ABI=$ANDROID_ABI \
       ${cmakeargs} \
       -DCMAKE_BUILD_TYPE=$btype \
-      -DCMAKE_INSTALL_PREFIX="${prefix}" \
+      -DCMAKE_INSTALL_PREFIX="${innerprefix}" \
       "$(pwd)/${cmakedir}" >&2
 
     if [ "${PIPESTATUS[0]}" -ne 0 ]; then
@@ -352,7 +358,7 @@ buildMakeProject(){
     echo "xpath = $(pwd)"
 #    exit 1
     ${rel_path}/configure  \
-        --prefix="${prefix}"  \
+        --prefix="${innerprefix}"  \
         ${configure} >&2
     if [ "${PIPESTATUS[0]}" -ne 0 ]; then
       echo "${project}: ERROR: $rel_path/configure failed ${srcdir}" >&2
@@ -498,9 +504,9 @@ fi
 ##    Build cutils
 ##
 #################################################################
-export LIBRARY_PATH="${SUBPROJECTS_ROOT}/CUtils/dist/lib:$LIBRARY_PATH"
+export LIBRARY_PATH="${SUBPROJECTS_ROOT}/CUtils/dist/${ANDROID_ABI}/lib:$LIBRARY_PATH"
 rebuild=0
-if [ ! -z "$(checkLibrary name=cutils static=true path="${SUBPROJECTS_ROOT}/CUtils/dist/lib")" ]; then
+if [ ! -z "$(checkLibrary name=cutils static=true path="${SUBPROJECTS_ROOT}/CUtils/dist/${ANDROID_ABI}/lib")" ]; then
   rebuild=1
 else
   rebuild=$(checkGitRepoState repo="CUtils" package="cutils")
@@ -525,8 +531,8 @@ fi
 ##
 #################################################################
 gsoap_version=2.8.134
-export PATH="$SUBPROJECTS_ROOT/gsoap_$gsoap_version/gsoap-2.8/dist/bin:$PATH"
-if [ ! -z "$(checkLibrary name=gsoap native=true static=true path="${SUBPROJECTS_ROOT}/gsoap_$gsoap_version/gsoap-2.8/dist/lib")" ]; then
+export PATH="$SUBPROJECTS_ROOT/gsoap_$gsoap_version/gsoap-2.8/dist/${ANDROID_ABI}/bin:$PATH"
+if [ ! -z "$(checkLibrary name=gsoap native=true static=true path="${SUBPROJECTS_ROOT}/gsoap_$gsoap_version/gsoap-2.8/dist/${ANDROID_ABI}/lib")" ]; then
   downloadAndExtract project="gsoap" file="gsoap_$gsoap_version.zip" path="https://sourceforge.net/projects/gsoap2/files/gsoap_$gsoap_version.zip/download"
   LIBS='-ldl -lpthread' \
   buildMakeProject project="gsoap" srcdir="gsoap_${gsoap_version}/gsoap-2.8" prefix="$SUBPROJECTS_ROOT/gsoap_${gsoap_version}/gsoap-2.8/dist" autogen="skip" configure="--with-openssl=/usr/lib/ssl" localtoolchain="true"
@@ -539,8 +545,8 @@ fi
 ##    Build libntlm
 ##
 #################################################################
-export LIBRARY_PATH="${SUBPROJECTS_ROOT}/libntlm-1.8/dist/lib:$LIBRARY_PATH"
-if [ ! -z "$(checkLibrary name=ntlm static=true path="${SUBPROJECTS_ROOT}/libntlm-1.8/dist/lib")" ]; then
+export LIBRARY_PATH="${SUBPROJECTS_ROOT}/libntlm-1.8/dist/${ANDROID_ABI}/lib:$LIBRARY_PATH"
+if [ ! -z "$(checkLibrary name=ntlm static=true path="${SUBPROJECTS_ROOT}/libntlm-1.8/dist/${ANDROID_ABI}/lib")" ]; then
   downloadAndExtract project="libntlm-1.8" file="libntlm-1.8.tar.gz" path="https://download-mirror.savannah.gnu.org/releases/libntlm/libntlm-1.8.tar.gz"
   buildMakeProject project="libntlm-1.8" srcdir="libntlm-1.8" prefix="$SUBPROJECTS_ROOT/libntlm-1.8/dist" skipbootstrap="true" configure="--enable-shared=no --host=$TARGET"
 else
@@ -552,13 +558,7 @@ fi
 #    Build OnvifSoapLib
 #
 ################################################################
-export LIBRARY_PATH="${SUBPROJECTS_ROOT}/CUtils/dist/lib:$LIBRARY_PATH"
-export LIBRARY_PATH="${GSTREAMER_ROOT}:$LIBRARY_PATH"
-export LIBRARY_PATH="${GSTREAMER_ROOT}/gio:$LIBRARY_PATH"
-export LIBRARY_PATH="${GSTREAMER_ROOT}/glib-2.0:$LIBRARY_PATH"
-export LIBRARY_PATH="${GSTREAMER_ROOT}/gstreamer-1.0:$LIBRARY_PATH"
-
-export LIBRARY_PATH="${SUBPROJECTS_ROOT}/CUtils/dist/lib:$LIBRARY_PATH"
+export LIBRARY_PATH="${SUBPROJECTS_ROOT}/CUtils/dist/${ANDROID_ABI}/lib:$LIBRARY_PATH"
 export LIBRARY_PATH="${GSTREAMER_ROOT}:$LIBRARY_PATH"
 export LIBRARY_PATH="${GSTREAMER_ROOT}/gio:$LIBRARY_PATH"
 export LIBRARY_PATH="${GSTREAMER_ROOT}/glib-2.0:$LIBRARY_PATH"
@@ -568,7 +568,7 @@ export C_INCLUDE_PATH="${GSTREAMER_ROOT}/include:$C_INCLUDE_PATH"
 export C_INCLUDE_PATH="${GSTREAMER_ROOT}/include/openssl:$C_INCLUDE_PATH"
 
 rebuild=0
-if [ ! -z "$(checkLibrary name=onvifsoap static=true path="${SUBPROJECTS_ROOT}/OnvifSoapLib/dist/lib")" ]; then
+if [ ! -z "$(checkLibrary name=onvifsoap static=true path="${SUBPROJECTS_ROOT}/OnvifSoapLib/dist/${ANDROID_ABI}/lib")" ]; then
   rebuild=1
 else
   rebuild=$(checkGitRepoState repo="OnvifSoapLib")
@@ -577,7 +577,6 @@ fi
 if [ $rebuild != 0 ]; then
   #Clean up previous build in case of failure. This will prevent from falling back on the old version
   rm -rf "$SUBPROJECTS_ROOT/OnvifSoapLib/build/*"
-  rm -rf "$SUBPROJECTS_ROOT/OnvifSoapLib/dist/*"
 
   pullOrClone project="onvifsoap" path="https://github.com/Quedale/OnvifSoapLib.git" ignorecache="true"
 
