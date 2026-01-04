@@ -2,10 +2,25 @@
 <resources>
     <string name="app_name">AndrONVIF</string>
     <string name="player_fragment_label">Player Fragment</string>
+    <string name="player_playing_device_message">"Playing device : "</string>
+    
     <string name="device_list_fragment_label">Device List Fragment</string>
+    <string name="device_list_add_device_contentdesc">Add onvif devices</string>
+
     <string name="device_discovery_fragment_label">Device Discovery Fragment</string>
+    <string name="device_discovery_cancel_contentdesc">Cancel discovery and return to the device list view.</string>
+    <string name="device_discovery_add_contentdesc">Manually add a new device</string>
+    
+    <string name="device_preview_snapshot_contentdesc">A onvif snapshot preview</string>
+    <string name="device_preview_loading_label">Authenticating...</string>
+    
     <string name="add_device_fragment_label">Add Device</string>
-    <string name="onvif_snapshot_preview_content_desc">A onvif snapshot preview</string>
-    <string name="button_to_add_onvif_devices_content_desc">Button to Add onvif devices</string>
-    <string name="playing_device_message">"Playing device : "</string>
+    <string name="add_device_loading_label">Please wait...</string>
+    <string name="add_device_cancel_contentdesc">Cancel manual wizard</string>
+    <string name="add_device_add_contentdesc">Add configured device</string>
+    <string name="add_device_chckproto_text">HTTPS</string>
+    <string name="add_device_hostname_hint">Hostname/IP</string>
+    <string name="add_device_password_hint">Password</string>
+    <string name="add_device_port_hint">Port number</string>
+    <string name="add_device_username_hint">Username</string>
 </resources>

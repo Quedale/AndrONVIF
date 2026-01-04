@@ -47,6 +47,9 @@ public class DevicePreview extends LinearLayout {
 
         TextView device_hardware = this.findViewById(R.id.device_hw);
         device_hardware.setText(device.getHardware());
+
+        LinearLayout scope_layout = this.findViewById(R.id.devpreview_scope_layout);
+        scope_layout.setVisibility(VISIBLE);
     }
 
     private void updateBitmap(AndrONVIFDevice device){
@@ -62,18 +65,23 @@ public class DevicePreview extends LinearLayout {
     }
 
     public void setDevice(AndrONVIFDevice device){
-        updateScopes(device);
         device.observeStateFlags(getLifecycleOwner(), newstate -> {
             if((newstate & AndrONVIFDevice.STATE_AUTHENTICATED_MASK) != 0){
                 Log.d("DevicePreview", "Device authenticated : " + device.getUrl());
+                LinearLayout layout = this.findViewById(R.id.devpreview_loading_overlay);
+                layout.setVisibility(VISIBLE);
             }
 
             if((newstate & AndrONVIFDevice.STATE_SCOPE_MASK) != 0){
                 updateScopes(device);
+                LinearLayout layout = this.findViewById(R.id.devpreview_loading_overlay);
+                layout.setVisibility(INVISIBLE);
             }
 
             if((newstate & AndrONVIFDevice.STATE_SNAP_MASK) != 0){
                 updateBitmap(device);
+                LinearLayout layout = this.findViewById(R.id.devpreview_loading_overlay);
+                layout.setVisibility(INVISIBLE);
             }
         });
     }

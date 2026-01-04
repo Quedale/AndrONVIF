@@ -20,7 +20,7 @@
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Hostname/IP"
+                    android:hint="@string/add_device_hostname_hint"
                     android:id="@+id/layouthostname"
                     app:layout_constraintBottom_toTopOf="@+id/chckproto"
                     app:layout_constraintEnd_toEndOf="parent"
@@ -37,7 +37,7 @@
                     android:id="@+id/chckproto"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="HTTPS"
+                    android:text="@string/add_device_chckproto_text"
                     app:layout_constraintBottom_toTopOf="@+id/layoutport"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
@@ -46,7 +46,7 @@
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Port number"
+                    android:hint="@string/add_device_port_hint"
                     android:id="@+id/layoutport"
                     app:layout_constraintBottom_toTopOf="@+id/layoutuser"
                     app:layout_constraintEnd_toEndOf="parent"
@@ -63,7 +63,7 @@
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Username"
+                    android:hint="@string/add_device_username_hint"
                     android:id="@+id/layoutuser"
                     app:layout_constraintBottom_toTopOf="@+id/layoutpassword"
                     app:layout_constraintEnd_toEndOf="parent"
@@ -79,7 +79,7 @@
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Port number"
+                    android:hint="@string/add_device_password_hint"
                     android:id="@+id/layoutpassword"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
@@ -93,23 +93,25 @@
                 </com.google.android.material.textfield.TextInputLayout>
             </androidx.constraintlayout.widget.ConstraintLayout>
         </androidx.core.widget.NestedScrollView>
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
+        <net.quedale.andronvif.utils.AccessibleFloatingActionButton
             android:id="@+id/save_btn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|start"
             android:layout_margin="@dimen/fab_margin"
-            android:contentDescription="TODO"
-            app:srcCompat="@android:drawable/ic_menu_save" />
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:contentDescription="@string/add_device_add_contentdesc"
+            app:srcCompat="@android:drawable/ic_menu_save"
+            app:tint="?android:textColorPrimary" />
+        <net.quedale.andronvif.utils.AccessibleFloatingActionButton
             android:id="@+id/cancelbtn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|end"
-            android:layout_marginEnd="@dimen/fab_margin"
+            android:layout_margin="@dimen/fab_margin"
             android:layout_marginBottom="16dp"
-            android:contentDescription="TODO"
-            app:srcCompat="@android:drawable/ic_menu_close_clear_cancel" />
+            android:contentDescription="@string/add_device_cancel_contentdesc"
+            app:srcCompat="@android:drawable/ic_menu_close_clear_cancel"
+            app:tint="?android:textColorPrimary" />
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
     <!-- Loading overlay layout (initially hidden) -->
@@ -129,7 +131,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Please wait..." />
+            android:text="@string/add_device_loading_label" />
     </LinearLayout>
 
 </FrameLayout>

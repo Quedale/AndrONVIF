@@ -50,7 +50,7 @@ public class PlayerFragment  extends Fragment {
 
             player.setDevice(device);
 
-            String text = getString(R.string.playing_device_message) + device.getUrl();
+            String text = getString(R.string.player_playing_device_message) + device.getUrl();
             binding.deviceOnvifUrl.setText(text);
 
             SurfaceHolder sh = binding.surfaceVideo.getHolder();

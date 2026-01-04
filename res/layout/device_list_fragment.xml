@@ -33,12 +33,16 @@
             </androidx.recyclerview.widget.RecyclerView>
         </androidx.core.widget.NestedScrollView>
     </LinearLayout>
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
+
+    <net.quedale.andronvif.utils.AccessibleFloatingActionButton
         android:id="@+id/fab"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="@dimen/fab_margin"
-        android:contentDescription="@string/button_to_add_onvif_devices_content_desc"
-        app:srcCompat="@android:drawable/ic_input_add" />
+        android:contentDescription="@string/device_list_add_device_contentdesc"
+        android:accessibilityTraversalBefore="@+id/my_recycler_view"
+        app:srcCompat="@android:drawable/ic_input_add"
+        app:tint="?android:textColorPrimary" />
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

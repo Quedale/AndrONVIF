@@ -34,20 +34,23 @@
             </androidx.recyclerview.widget.RecyclerView>
         </androidx.core.widget.NestedScrollView>
     </LinearLayout>
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
+    <net.quedale.andronvif.utils.AccessibleFloatingActionButton
         android:id="@+id/manual_add_btn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|start"
         android:layout_margin="@dimen/fab_margin"
-        android:contentDescription="TODO"
-        app:srcCompat="@android:drawable/ic_input_add" />
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:contentDescription="@string/device_discovery_add_contentdesc"
+        app:srcCompat="@android:drawable/ic_input_add"
+        app:tint="?android:textColorPrimary"/>
+
+    <net.quedale.andronvif.utils.AccessibleFloatingActionButton
         android:id="@+id/back"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="@dimen/fab_margin"
-        android:contentDescription="TODO"
-        app:srcCompat="@android:drawable/ic_menu_close_clear_cancel" />
+        android:contentDescription="@string/device_discovery_cancel_contentdesc"
+        app:srcCompat="@android:drawable/ic_menu_close_clear_cancel"
+        app:tint="?android:textColorPrimary"/>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

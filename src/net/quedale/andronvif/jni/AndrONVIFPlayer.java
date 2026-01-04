@@ -1,22 +1,14 @@
 package net.quedale.andronvif.jni;
 
-import android.content.Context;
-import android.os.Handler;
-import android.os.Looper;
 import android.util.Log;
 import android.view.SurfaceHolder;
-import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
-import net.quedale.andronvif.R;
-
 import org.freedesktop.gstreamer.GStreamer;
 import org.freedesktop.gstreamer.GStreamerSurfaceView;
-
-import java.util.concurrent.Executor;
 
 import dalvik.annotation.optimization.CriticalNative;
 import dalvik.annotation.optimization.FastNative;
@@ -66,26 +58,20 @@ public class AndrONVIFPlayer extends JNIObject implements SurfaceHolder.Callback
     }
 
     // Called from native code. This sets the content of the TextView from the UI thread.
+    @SuppressWarnings("unused")
     private void setMessage(final String message) {
         Log.d("AndrONVIFPlayer","message: " + message);
-        view.post (new Runnable() {
-            public void run() {
-                txtview.setText(message);
-            }
-        });
+        view.post (() -> txtview.setText(message));
     }
 
     // Called from native code when the size of the media changes or is first detected.
     // Inform the video surface about the new size and recalculate the layout.
+    @SuppressWarnings("unused")
     private void onMediaSizeChanged (int width, int height) {
         Log.i ("GStreamer", "Media size changed to " + width + "x" + height);
         view.media_width = width;
         view.media_height = height;
-        view.post(new Runnable() {
-            public void run() {
-                view.requestLayout();
-            }
-        });
+        view.post(view::requestLayout);
     }
 
     public void setDevice(AndrONVIFDevice device){

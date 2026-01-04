@@ -7,6 +7,7 @@
     android:orientation="vertical"
     android:background="@drawable/devicerow_state_border_selector"
     android:layout_margin="2dp">
+
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
@@ -15,18 +16,20 @@
             android:id="@+id/snapshotPreview"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:contentDescription="@string/onvif_snapshot_preview_content_desc"
+            android:contentDescription="@string/device_preview_snapshot_contentdesc"
             android:adjustViewBounds="true"
             android:padding="@dimen/smallerBorderSize"
             app:shapeAppearanceOverlay="@style/ShapeAppearance.Imageview.Rounded"
             android:scaleType="fitXY" />
         <LinearLayout
+            android:id="@+id/devpreview_scope_layout"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:background="@drawable/devicerow_state_border_selector"
             android:alpha="0.5"
             android:padding="8dp"
+            android:visibility="gone"
             android:layout_margin="6dp">
             <TextView
                 android:id="@+id/device_name"
@@ -55,6 +58,26 @@
                 android:singleLine="true"
                 android:ellipsize="end"
                 android:textSize="@dimen/previewFontSize"/>
+        </LinearLayout>
+
+        <!-- Global preview loading overlay layout (initially hidden) -->
+        <LinearLayout
+            android:id="@+id/devpreview_loading_overlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:alpha="1"
+            android:layout_margin="@dimen/top_padding"
+            android:orientation="vertical"
+            android:visibility="visible">
+            <ProgressBar
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:indeterminate="true" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/device_preview_loading_label" />
         </LinearLayout>
     </FrameLayout>
 </net.quedale.andronvif.list.DevicePreview>
