@@ -831,7 +831,7 @@ AndrONVIFPlayer__idle_stop(AndrONVIFPlayer * self) {
 static JNIEXPORT void JNICALL
 AndrONVIFPlayer__nativeStop(jlong pointer) {
     C_DEBUG("AndrONVIFPlayer__nativeStop");
-    g_return_if_fail(pointer > 0);
+    g_return_if_fail(pointer != 0);
     g_return_if_fail(ANDRONVIF_IS_PLAYER((void*)pointer));
     AndrONVIFPlayer * self = ANDRONVIF_PLAYER((void*)pointer);
     AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (self);
@@ -850,7 +850,7 @@ AndrONVIFPlayer__idle_play(AndrONVIFPlayer * self){
 
 static JNIEXPORT void JNICALL
 AndrONVIFPlayer__play(jlong pointer) {
-    g_return_if_fail(pointer > 0);
+    g_return_if_fail(pointer != 0);
     g_return_if_fail(ANDRONVIF_IS_PLAYER((void*)pointer));
 
     AndrONVIFPlayer * self = ANDRONVIF_PLAYER((void*)pointer);
@@ -868,9 +868,9 @@ AndrONVIFPlayer__play(jlong pointer) {
 JNIEXPORT void JNICALL
 AndrONVIFPlayer__set_device(jlong self_pointer, jlong device_pointer){
     C_DEBUG("AndrONVIFPlayerNew__set_device");
-    g_return_if_fail(self_pointer > 0);
+    g_return_if_fail(self_pointer != 0);
     g_return_if_fail(ANDRONVIF_IS_PLAYER((void*)self_pointer));
-    g_return_if_fail(device_pointer > 0);
+    g_return_if_fail(device_pointer != 0);
     g_return_if_fail(ONVIF_IS_DEVICE((void*)device_pointer));
 
     AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (ANDRONVIF_PLAYER((void*)self_pointer));
@@ -951,7 +951,7 @@ AndrONVIFPlayer__nativeNew() {
 
 static JNIEXPORT void JNICALL
 AndrONVIFPlayer__surfaceChanged (JNIEnv *env, jclass klass, jlong pointer, jobject surface, jint format, jint width, jint height) {
-    g_return_if_fail(pointer > 0);
+    g_return_if_fail(pointer != 0);
     g_return_if_fail(ANDRONVIF_IS_PLAYER((void*)pointer));
 
     AndrONVIFPlayer * self = ANDRONVIF_PLAYER((void*)pointer);
@@ -982,7 +982,7 @@ AndrONVIFPlayer__surfaceChanged (JNIEnv *env, jclass klass, jlong pointer, jobje
 
 static JNIEXPORT void JNICALL
 AndrONVIFPlayer__nativeSurfaceDestroyed (jlong pointer) {
-    g_return_if_fail(pointer > 0);
+    g_return_if_fail(pointer != 0);
     g_return_if_fail(ANDRONVIF_IS_PLAYER((void*)pointer));
 
     AndrONVIFPlayer * self = ANDRONVIF_PLAYER((void*)pointer);
@@ -1084,7 +1084,7 @@ AndrONVIFPlayer__nativeClassInit (JNIEnv * env, jclass klass){
 
 /* Instruct the native code to create its internal data structure, pipeline and thread */
 static void AndrONVIFPlayer__nativeInit (JNIEnv* env, jobject thiz, jlong pointer) {
-    g_return_if_fail(pointer > 0);
+    g_return_if_fail(pointer != 0);
     g_return_if_fail(ANDRONVIF_IS_PLAYER((void*)pointer));
     AndrONVIFPlayer * self = ANDRONVIF_PLAYER((void*)pointer);
     AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (self);

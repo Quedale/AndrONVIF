@@ -4,7 +4,7 @@
 
 JNIEXPORT jint JNICALL
 SoapObject__getFault(jlong pointer){
-    g_return_val_if_fail(pointer > 0, SOAP_FAULT_UNEXPECTED);
+    g_return_val_if_fail(pointer != 0, SOAP_FAULT_UNEXPECTED);
     g_return_val_if_fail(SOAP_IS_OBJECT((void*)pointer), SOAP_FAULT_UNEXPECTED);
 
     SoapFault * faultptr = SoapObject__get_fault(SOAP_OBJECT((void*)pointer));

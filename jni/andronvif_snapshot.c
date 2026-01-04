@@ -5,7 +5,7 @@
 
 JNIEXPORT jobject JNICALL
 AndrONVIFSnapshot__getNativeBuffer(JNIEnv *env, jclass klazz, jlong pointer) {
-    g_return_val_if_fail(pointer > 0, NULL);
+    g_return_val_if_fail(pointer != 0, NULL);
     g_return_val_if_fail(ONVIF_IS_MEDIA_SNAPSHOT((void*)pointer), NULL);
 
     OnvifMediaSnapshot * snapshot = ONVIF_MEDIA_SNAPSHOT((void*)pointer);

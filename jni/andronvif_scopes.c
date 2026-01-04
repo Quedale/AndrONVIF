@@ -4,7 +4,7 @@
 
 static JNIEXPORT jstring JNICALL
 AndrONVIFScopes__extractScope(JNIEnv * env, jclass clazz, jlong pointer, jstring key) {
-    g_return_val_if_fail(pointer > 0, NULL);
+    g_return_val_if_fail(pointer != 0, NULL);
     g_return_val_if_fail(ONVIF_IS_DEVICE_SCOPES((void*)pointer), NULL);
 
     const char * native_key = (*env)->GetStringUTFChars(env, key, 0);

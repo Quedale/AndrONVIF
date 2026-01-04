@@ -12,6 +12,8 @@ AndrONVIFDevice__nativeNew(JNIEnv * env, jobject thiz, jstring url){
 
 JNIEXPORT jstring JNICALL
 AndrONVIFDevice__getHostname(JNIEnv * env, jobject thiz, jlong pointer){
+    g_return_val_if_fail(pointer != 0, 0);
+    g_return_val_if_fail(ONVIF_IS_DEVICE((void*)pointer), 0);
     OnvifDevice * device = ONVIF_DEVICE((void*)pointer);
     char * hostname = OnvifDevice__get_host(device);
     jstring *java_str = (*env)->NewStringUTF (env, hostname);
@@ -22,6 +24,8 @@ AndrONVIFDevice__getHostname(JNIEnv * env, jobject thiz, jlong pointer){
 
 JNIEXPORT jstring JNICALL
 AndrONVIFDevice__getProtocol(JNIEnv * env, jobject thiz, jlong pointer){
+    g_return_val_if_fail(pointer != 0, 0);
+    g_return_val_if_fail(ONVIF_IS_DEVICE((void*)pointer), 0);
     OnvifDevice * device = ONVIF_DEVICE((void*)pointer);
     char * proto = OnvifDevice__get_protocol(device);
     jstring *java_str = (*env)->NewStringUTF (env, proto);
@@ -35,6 +39,8 @@ static int DEFAULT_HTTP_PORT = 80;
 
 JNIEXPORT jint JNICALL
 AndrONVIFDevice__getPort(jlong pointer){
+    g_return_val_if_fail(pointer != 0, 0);
+    g_return_val_if_fail(ONVIF_IS_DEVICE((void*)pointer), 0);
     OnvifDevice * device = ONVIF_DEVICE((void*)pointer);
     char * strport = OnvifDevice__get_port(device);
     jint ret = -1;
@@ -56,6 +62,8 @@ AndrONVIFDevice__getPort(jlong pointer){
 
 JNIEXPORT void JNICALL
 AndrONVIFDevice__setCredentials(JNIEnv * env, jobject thiz, jlong pointer, jstring username, jstring password){
+    g_return_if_fail(pointer != 0);
+    g_return_if_fail(ONVIF_IS_DEVICE((void*)pointer));
     const char * native_username = (*env)->GetStringUTFChars(env, username, 0);
     const char * native_password = (*env)->GetStringUTFChars(env, password, 0);
     OnvifDevice__set_credentials(ONVIF_DEVICE((void*)pointer),native_username,native_password);
@@ -65,12 +73,14 @@ AndrONVIFDevice__setCredentials(JNIEnv * env, jobject thiz, jlong pointer, jstri
 
 JNIEXPORT jint JNICALL
 AndrONVIFDevice__authenticate(JNIEnv * env, jobject thiz, jlong pointer){
+    g_return_val_if_fail(pointer != 0, 0);
+    g_return_val_if_fail(ONVIF_IS_DEVICE((void*)pointer), 0);
     return (jint) OnvifDevice__authenticate(ONVIF_DEVICE((void*)pointer));
 }
 
 JNIEXPORT jlong JNICALL
-AndrONVIFDevice__fetchScopes(JNIEnv * env, jobject thiz, jlong pointer) {
-    g_return_val_if_fail(pointer > 0, 0);
+AndrONVIFDevice__fetchScopes(JNIEnv * env, jclass klass, jlong pointer) {
+    g_return_val_if_fail(pointer != 0, 0);
     g_return_val_if_fail(ONVIF_IS_DEVICE((void*)pointer), 0);
     OnvifDevice * dev = ONVIF_DEVICE((void*)pointer);
     OnvifDeviceService * dev_service = OnvifDevice__get_device_service(dev);
@@ -80,8 +90,8 @@ AndrONVIFDevice__fetchScopes(JNIEnv * env, jobject thiz, jlong pointer) {
 }
 
 JNIEXPORT jlong JNICALL
-AndrONVIFDevice__fetchSnapshot(JNIEnv * env, jobject thiz, jlong pointer, jint profile_index) {
-    g_return_val_if_fail(pointer > 0, 0);
+AndrONVIFDevice__fetchSnapshot(JNIEnv * env, jclass klass, jlong pointer, jint profile_index) {
+    g_return_val_if_fail(pointer != 0, 0);
     g_return_val_if_fail(ONVIF_IS_DEVICE((void*)pointer), 0);
     OnvifDevice * dev = ONVIF_DEVICE((void*)pointer);
     OnvifMediaService * media_service = OnvifDevice__get_media_service(dev);
