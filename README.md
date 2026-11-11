@@ -31,11 +31,30 @@ Although I may still invest time in it if the AOSP community has interest in it.
 ## Step 1 : Environment config
 Create "local.properties" files and set your android sdk location.
 Example:
-'''
+```
 sdk.dir=/home/awesomeuser/AndroidSdk
-'''
+```
 
 ## Using AndroidStudio
 If you already have a functionnal Android Studio setup, you can simply open the project and assemble it.
 Configuring Android Studio can be a pain depending on the distro, so I won't bother trying to create a guide.
 
+## Gradle CLI
+Install gradle
+```
+sudo pacman -Sy gradle
+```
+
+Assemble project
+```
+gradle assembleRelease
+```
+
+The APK should be available at the following location:
+```
+AndrONVIF/build/outputs/apk/release/AndrONVIF-release-unsigned.apk
+```
+
+## Docker
+
+Not available yet.
