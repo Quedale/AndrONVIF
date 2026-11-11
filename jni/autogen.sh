@@ -3,6 +3,9 @@
 ENABLE_DEBUG=0
 SCRT_DIR=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)
 
+export CFLAGS="-fPIC -O2 -g "$CFLAGS
+export CXXFLAGS="-fPIC -O2 -g"$CXXFLAGS
+
 SUBPROJECTS_ROOT="${SUBPROJECTS_ROOT:=${SCRT_DIR}/subprojects}"
 
 #Cache folder for downloaded sources
@@ -11,7 +14,7 @@ SRC_CACHE_DIR=$SUBPROJECTS_ROOT/.cache
 NO_DOWNLOAD=0
 FAILED=0
 
-GSTREAMER_VERSION=1.27.2
+GSTREAMER_VERSION=1.29.2
 GSTREAMER_ANDROID_LIBS=gstreamer-1.0-android-universal-$GSTREAMER_VERSION
 
 #WGET_CMD="wget --force-progress" #Since version 2+ show-progress ins't supported
@@ -59,6 +62,85 @@ function displaytime {
   (( $M > 0 )) && output=$output"$M minutes "
   (( $D > 0 || $H > 0 || $M > 0 )) && output=$output"and "
   echo "${output}${S} seconds" >&2
+}
+
+progVersionCheck(){
+  local major minor micro linenumber lineindex program paramoverride startcut length
+  local "${@}"
+
+  varparam="--version"
+  if [ ! -z ${paramoverride} ]; then
+    varparam="${paramoverride}"
+  fi;
+  # echo "------------------------" 1> /dev/stdin
+  # echo "test ${program} ${varparam}" 1> /dev/stdin
+  # echo "------------------------" 1> /dev/stdin
+
+  test=$(${program} $varparam 2> /dev/null)
+  ret=$?
+  if [[ $ret -ne 0 ]]; then
+      echo "prog ${program} not found" >&2
+      echo 1
+      return
+  fi
+
+  FIRSTLINE=$(${program} ${varparam} | head -${linenumber})
+  firstLineArray=(${FIRSTLINE//;/ })
+  versionString=${firstLineArray[${lineindex}]};
+
+  [[ ! -z "${startcut}" ]] && [[ -z "${length}" ]] && versionString=${versionString:2}
+  [[ ! -z "${startcut}" ]] && [[ ! -z "${length}" ]] && versionString=${versionString:$startcut:$length}
+  [[ -z "${startcut}" ]] && [[ ! -z "${length}" ]] && versionString=${versionString:0:$length}
+
+  versionArray=(${versionString//./ })
+  actualmajor=${versionArray[0]}
+  actualminor=${versionArray[1]}
+  actualmicro=${versionArray[2]}
+
+  if [ -z "$major"  ]; then
+    echo "prog ${program} found" >&2
+    return;
+  fi
+
+  if [[ -z "$actualmajor"  || ! "$actualmajor" == ?(-)+([[:digit:]]) ]]; then echo "Unexpected ${program} version ouput[1] \"$FIRSTLINE\" \"$versionString\""; return; fi
+  if [ "$actualmajor" -gt "$major" ]; then
+    echo "prog ${program} found" >&2
+    return;
+  elif [ "$actualmajor" -lt "$major" ]; then
+    echo "prog ${program} version is too old. $actualmajor.$actualminor.$actualmicro < $major.$minor.$micro" >&2
+    echo 1
+  else
+    if [ -z "$minor"  ]; then return; fi
+    if [[ -z "$actualminor"  || ! "$actualminor" == ?(-)+([[:digit:]]) ]]; then echo "Unexpected ${program} version ouput[2] \"$FIRSTLINE\" \"$versionString\""; return; fi
+    if [ "$actualminor" -gt "$minor" ]; then
+      echo "prog ${program} found" >&2
+      return;
+    elif [ "$actualminor" -lt "$minor" ]; then
+      echo "prog ${program} version is too old. $actualmajor.$actualminor.$actualmicro < $major.$minor.$micro" >&2
+      echo 1
+    else
+      if [ -z "$micro"  ]; then return; fi
+      if [[ -z "$actualmicro"  || ! "$actualmicro" == ?(-)+([[:digit:]]) ]]; then echo "Unexpected ${program} version ouput[3] \"$FIRSTLINE\" \"$versionString\""; return; fi
+      if [ ! -z "$micro" ] && [ "$actualmicro" -lt "$micro" ]; then
+        echo "prog ${program} version is too old. $actualmajor.$actualminor.$actualmicro < $major.$minor.$micro" >&2
+        echo 1
+      else
+        echo "prog ${program} found" >&2
+        return
+      fi
+    fi
+  fi
+}
+
+
+export PATH="$SUBPROJECT_DIR/unzip60/build/dist/bin":$PATH
+HAS_UNZIP=0
+checkUnzip(){
+  if [ $HAS_UNZIP -eq 0 ] && [ ! -z "$(progVersionCheck program=unzip paramoverride="-v")" ]; then
+    downloadAndExtract project="unzip" file="unzip60.tar.gz" path="https://sourceforge.net/projects/infozip/files/UnZip%206.x%20%28latest%29/UnZip%206.0/unzip60.tar.gz/download"
+    buildMakeProject project="unzip" srcdir="unzip60" make="-f unix/Makefile generic" installargs=" prefix=$SUBPROJECT_DIR/unzip60/build/dist MANDIR=$SUBPROJECT_DIR/unzip60/build/dist/share/man/man1 -f unix/Makefile" localtoolchain="true" noabi=true
+  fi
+  HAS_UNZIP=1
 }
 
 ############################################
@@ -247,13 +329,14 @@ buildMakeProject(){
   echo "${project}: prefix: '${prefix}'" >&2
 
   if [ ! -z "${localtoolchain}" ]; then
+    echo "Using local toolkit" >&2
     export TOOLCHAIN=$og_tool_chain
     export TARGET=$og_target
     export API=$og_api
     export AR=$og_ar
     export AS=$og_as
-    export CC=$og_cc
-    export CXX=$og_cxx
+    export CC="" #This variable is always set by gradle/androidstudio(?) forcing system default
+    export CXX="" #This variable is always set by gradle/androidstudio(?) forcing system default
     export LD=$og_ld
     export RANLIB=$og_ranlib
     export STRIP=$og_strip
@@ -355,7 +438,6 @@ buildMakeProject(){
   if [ -f "${SUBPROJECTS_ROOT}/${srcdir}/configure" ] && [ -z "${cmakedir}" ]; then
     echo "${project}: src: ${srcdir}" >&2
     echo "${project}: arguments: ${configure}" >&2
-    echo "xpath = $(pwd)"
 #    exit 1
     ${rel_path}/configure  \
         --prefix="${innerprefix}"  \
@@ -382,6 +464,11 @@ buildMakeProject(){
   if [ "${PIPESTATUS[0]}" -ne 0 ]; then
     echo "${project}: ERROR: make install failed ${srcdir}" >&2
     [[ ! -z "${noexit}" ]] && FAILED=1 && cd "$OLDPWD" && return || exit 1;
+  fi
+
+  if [ ! -z "${distclean}" ]; then
+    echo "${project}:Cleaning build artifacts" >&2
+    make -C $(pwd) -j$(nproc) distclean >&2
   fi
 
   build_time=$(( SECONDS - build_start ))
@@ -440,29 +527,30 @@ checkGitRepoState(){
 }
 
 setTargetBuildVariables(){
-  export TOOLCHAIN=$TARGET_TOOLCHAIN
-  export TARGET=$TARGET_TARGET
-  export API=$TARGET_API #minSdk version
-  export AR=$TARGET_AR
-  export CC=$TARGET_CC
-  export AS=$TARGET_AS
-  export CXX=$TARGET_CXX
-  export LD=$TARGET_LD
-  export RANLIB=$TARGET_RANLIB
-  export STRIP=$TARGET_STRIP
-  export CHOST=$TARGET_CHOST
+  echo "Using ABI toolkit : $ANDROID_ABI" >&2
 
-  echo "TOOLCHAIN=$TOOLCHAIN" >&2
-  echo "TARGET=$TARGET" >&2
-  echo "API=$API" >&2
-  echo "AR=$AR" >&2
-  echo "CC=$CC" >&2
-  echo "CXX=$CXX" >&2
-  echo "AS=$AS" >&2
-  echo "LD=$LD" >&2
-  echo "RANLIB=$RANLIB" >&2
-  echo "STRIP=$STRIP" >&2
-  echo "CHOST=$CHOST" >&2
+  if [[ "$ANDROID_ABI" == "armeabi-v7a" ]]; then
+    export TARGET=armv7a-linux-androideabi
+  elif [[ "$ANDROID_ABI" == "arm64-v8a" ]]; then
+    export TARGET=aarch64-linux-android
+  elif [[ "$ANDROID_ABI" == "x86" ]]; then
+    export TARGET=i686-linux-android
+  elif [[ "$ANDROID_ABI" == "x86_64" ]]; then
+    export TARGET=x86_64-linux-android
+  else
+    echo "Unknown ANDROID_ABI $ANDROID_ABI" >&2
+    exit 1
+  fi
+  export API=$ANDROID_NATIVE_API_LEVEL
+  export TOOLCHAIN=$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64
+  export AR=$TOOLCHAIN/bin/llvm-ar
+  export LD=$TOOLCHAIN/bin/ld
+  export RANLIB=$TOOLCHAIN/bin/llvm-ranlib
+  export STRIP=$TOOLCHAIN/bin/llvm-strip
+  export CC="$TOOLCHAIN/bin/clang --target=$TARGET$API"
+  export AS=$CC
+  export CXX="$TOOLCHAIN/bin/clang++ --target=$TARGET$API"
+  export CHOST=$ANDROID_LLVM_TRIPLE
 }
 
 function checkLibrary {
@@ -513,13 +601,12 @@ else
 fi
 
 if [ $rebuild != 0 ]; then
-  #OnvifSoapLib depends on it and will also require a rebuild
+  #Clean up previous build in case of failure. This will prevent from falling back on the old version
   rm -rf "$SUBPROJECTS_ROOT/CUtils/build"
+  #OnvifSoapLib depends on it and will also require a rebuild
   rm -rf "$SUBPROJECTS_ROOT/OnvifSoapLib/build"
 
   pullOrClone path="https://github.com/Quedale/CUtils.git" ignorecache="true"
-  #Clean up previous build in case of failure. This will prevent from falling back on the old version
-  rm -rf "$SUBPROJECTS_ROOT/CUtils/build/*"
   buildMakeProject project="cutils" srcdir="CUtils" prefix="$SUBPROJECTS_ROOT/CUtils/dist" cmakedir=".." cmakeargs="-DBUILD_SHARED_LIBS=on" outoftree=true cmakeclean=true
 else
   echo "cutils already built"
@@ -531,11 +618,11 @@ fi
 ##
 #################################################################
 gsoap_version=2.8.134
-export PATH="$SUBPROJECTS_ROOT/gsoap_$gsoap_version/gsoap-2.8/dist/${ANDROID_ABI}/bin:$PATH"
-if [ ! -z "$(checkLibrary name=gsoap native=true static=true path="${SUBPROJECTS_ROOT}/gsoap_$gsoap_version/gsoap-2.8/dist/${ANDROID_ABI}/lib")" ]; then
+export PATH="$SUBPROJECTS_ROOT/gsoap_$gsoap_version/gsoap-2.8/dist/bin:$PATH"
+if [ ! -z "$(checkLibrary name=gsoap native=true static=true path="${SUBPROJECTS_ROOT}/gsoap_$gsoap_version/gsoap-2.8/dist/lib")" ]; then
   downloadAndExtract project="gsoap" file="gsoap_$gsoap_version.zip" path="https://sourceforge.net/projects/gsoap2/files/gsoap_$gsoap_version.zip/download"
   LIBS='-ldl -lpthread' \
-  buildMakeProject project="gsoap" srcdir="gsoap_${gsoap_version}/gsoap-2.8" prefix="$SUBPROJECTS_ROOT/gsoap_${gsoap_version}/gsoap-2.8/dist" autogen="skip" configure="--with-openssl=/usr/lib/ssl" localtoolchain="true"
+  buildMakeProject project="gsoap" srcdir="gsoap_${gsoap_version}/gsoap-2.8" prefix="$SUBPROJECTS_ROOT/gsoap_${gsoap_version}/gsoap-2.8/dist" autogen="skip" configure="--with-openssl=/usr/lib/ssl" localtoolchain="true" distclean=true noabi=true
 else
   echo "gsoap already built"
 fi
@@ -547,8 +634,8 @@ fi
 #################################################################
 export LIBRARY_PATH="${SUBPROJECTS_ROOT}/libntlm-1.8/dist/${ANDROID_ABI}/lib:$LIBRARY_PATH"
 if [ ! -z "$(checkLibrary name=ntlm static=true path="${SUBPROJECTS_ROOT}/libntlm-1.8/dist/${ANDROID_ABI}/lib")" ]; then
-  downloadAndExtract project="libntlm-1.8" file="libntlm-1.8.tar.gz" path="https://download-mirror.savannah.gnu.org/releases/libntlm/libntlm-1.8.tar.gz"
-  buildMakeProject project="libntlm-1.8" srcdir="libntlm-1.8" prefix="$SUBPROJECTS_ROOT/libntlm-1.8/dist" skipbootstrap="true" configure="--enable-shared=no --host=$TARGET"
+  downloadAndExtract project="libntlm-1.8" file="libntlm-1.8.tar.gz" path="https://mirror.csclub.uwaterloo.ca/nongnu/libntlm/libntlm-1.8.tar.gz" out="${SUBPROJECTS_ROOT}"
+  buildMakeProject project="libntlm-1.8" srcdir="libntlm-1.8" prefix="$SUBPROJECTS_ROOT/libntlm-1.8/dist" skipbootstrap="true" configure="--enable-shared=no --host $TARGET" distclean=true
 else
   echo "libntlm already built"
 fi
@@ -576,7 +663,7 @@ fi
 
 if [ $rebuild != 0 ]; then
   #Clean up previous build in case of failure. This will prevent from falling back on the old version
-  rm -rf "$SUBPROJECTS_ROOT/OnvifSoapLib/build/*"
+  rm -rf "$SUBPROJECTS_ROOT/OnvifSoapLib/build/"
 
   pullOrClone project="onvifsoap" path="https://github.com/Quedale/OnvifSoapLib.git" ignorecache="true"
 

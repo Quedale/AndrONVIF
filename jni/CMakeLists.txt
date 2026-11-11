@@ -104,9 +104,9 @@ target_include_directories(${CMAKE_PROJECT_NAME}
         ${GSTREAMER_ROOT}/include/openssl
         ${GSTREAMER_ROOT}/include/glib-2.0
         ${GSTREAMER_ROOT}/lib/glib-2.0/include
-        ${SUBPROJECTS_ROOT}/OnvifSoapLib/dist/include
-        ${SUBPROJECTS_ROOT}/CUtils/dist/include
-        ${SUBPROJECTS_ROOT}/libntlm-1.8/dist/include
+        ${SUBPROJECTS_ROOT}/OnvifSoapLib/dist/${ANDROID_ABI}/include
+        ${SUBPROJECTS_ROOT}/CUtils/dist/${ANDROID_ABI}/include
+        ${SUBPROJECTS_ROOT}/libntlm-1.8/dist/${ANDROID_ABI}/include
 )
 
 target_link_libraries(${CMAKE_PROJECT_NAME}
