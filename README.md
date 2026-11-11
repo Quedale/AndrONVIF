@@ -4,10 +4,12 @@ Android Onvif Manager for Android
 ![Application Capture](res/Images/AppScreenshot.png?raw=true "AndrONVIF Default Screen")
 
 # Description
-Very simple android client implementation using OnvifSoapLib with JNI wrapper.
+Very simple android client implementation using [OnvifSoapLib](https://github.com/Quedale/OnvifSoapLib) with JNI wrapper.
+This app is far from being finished. It is riddled with bugs and missing features.
+At this point, I would consider this pre-Alpha.
 
 I kinda lost interest in that project the moment Google announced the change related to development mode on Android device.
-Although I may still invest time in it if the AOSP community has interest in it. (e.g. GrapheneOS, LineageOS or Waydroid users)
+Although I may still invest time in it if the AOSP community is interested in it or if I find myself simply bored. (e.g. GrapheneOS, LineageOS or Waydroid users)
 
 # Working
 - Onvif WS-Discovery and WS-Security (gsoap)
