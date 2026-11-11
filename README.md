@@ -1,6 +1,8 @@
 # AndrONVIF
 Android Onvif Manager for Android
 
+![Application Capture](res/Images/AppScreenshot.png?raw=true "AndrONVIF Default Screen")
+
 # Description
 Very simple android client implementation using OnvifSoapLib with JNI wrapper.
 
@@ -28,33 +30,51 @@ Although I may still invest time in it if the AOSP community has interest in it.
 - [Yi-Hack Allwinner V2](https://github.com/roleoroleo/yi-hack-Allwinner-v2) (Pro 2K Home)
 
 # How to build 
-## Step 1 : Environment config
-Create "local.properties" files and set your android sdk location.
-Example:
-```
-sdk.dir=/home/awesomeuser/AndroidSdk
-```
-
-## Using AndroidStudio
-If you already have a functionnal Android Studio setup, you can simply open the project and assemble it.
+## Step 1 : Download Android SDK
+### Using Android Studio
 Configuring Android Studio can be a pain depending on the distro, so I won't bother trying to create a guide.
 
-## Gradle CLI
-Install gradle
+You can either use Android Studio SDK Manager GUI or the CLI tool.
+
+### Using the CLI:
+You will need to download [sdkmanager](https://developer.android.com/tools/sdkmanager) and use it to download Android SDK 17 and Android NDK 29.
+
+The following script assume a default location `~/Android/Sdk`.
+Change this to whatever you wish.
 ```
-sudo pacman -Sy gradle
+mkdir -p ~/Android/Sdk/cmdline-tools && cd ~/Android/Sdk/cmdline-tools
+wget https://dl.google.com/android/repository/commandlinetools-linux-15859902_latest.zip
+unzip commandlinetools-linux-15859902_latest.zip && mv cmdline-tools latest
+export ANDROID_HOME="$HOME/Android/Sdk"
+export PATH="$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools"
+yes | sdkmanager --licenses
 ```
+
+Use the sdkmanager to download the SDK and NDK
+```
+sdkmanager "platforms;android-17"
+sdkmanager --install "ndk;29.0.14206865" --channel=0
+```
+
+## Step 2 : Environment config
+Create "local.properties" files and set your Android SDL location.
+Example:
+```
+sdk.dir=/home/awesomeusername/Android/Sdk
+```
+
+## Step 3 : Build and Assemble APK
+### Using AndroidStudio
+If you already have a functionnal Android Studio setup, you can simply open the project and assemble it.
+
+### Gradle CLI
 
 Assemble project
 ```
-gradle assembleRelease
+./gradlew assembleRelease
 ```
 
 The APK should be available at the following location:
 ```
 AndrONVIF/build/outputs/apk/release/AndrONVIF-release-unsigned.apk
 ```
-
-## Docker
-
-Not available yet.

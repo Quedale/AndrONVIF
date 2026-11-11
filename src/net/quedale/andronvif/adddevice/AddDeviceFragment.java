@@ -4,6 +4,7 @@ import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
 
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,6 +13,7 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.graphics.Insets;
+import androidx.core.text.CharSequenceKt;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
@@ -131,7 +133,7 @@ public class AddDeviceFragment extends Fragment {
         binding.saveBtn.setOnClickListener(view1 -> {
             if(binding.txthostname.getText() != null)
                 model.setHostname(binding.txthostname.getText().toString());
-            if(binding.txtport.getText() != null)
+            if(binding.txtport.getText() != null && !TextUtils.isEmpty(binding.txtport.getText()))
                 model.setPort(Integer.parseInt(binding.txtport.getText().toString()));
             if(binding.chckproto.isChecked())
                 model.setHTTPS(true);
