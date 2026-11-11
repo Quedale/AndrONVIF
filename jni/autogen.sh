@@ -400,7 +400,7 @@ buildMakeProject(){
 
   if [ ! -z "${cmakedir}" ]; then
     echo "${project}: src: ${srcdir}" >&2
-    echo "${project}: arguments: ${cmakeargs}" >&2
+    echo "${project}: cmake arguments: ${cmakeargs}" >&2
     if [ ! -z "${cmakeclean}" ]; then
       cmake --build "${cmakedir}" --target clean >&2
       find . -iwholename '*cmake*' -not -name CMakeLists.txt -delete
@@ -437,7 +437,7 @@ buildMakeProject(){
 
   if [ -f "${SUBPROJECTS_ROOT}/${srcdir}/configure" ] && [ -z "${cmakedir}" ]; then
     echo "${project}: src: ${srcdir}" >&2
-    echo "${project}: arguments: ${configure}" >&2
+    echo "${project}: configure arguments: ${configure}" >&2
 #    exit 1
     ${rel_path}/configure  \
         --prefix="${innerprefix}"  \
@@ -451,7 +451,7 @@ buildMakeProject(){
   fi
 
   echo "${project}: src: ${srcdir}" >&2
-  echo "${project}: arguments: '${make}'" >&2
+  echo "${project}: make arguments: '${make}'" >&2
   make -C $(pwd) -j$(nproc) ${make} >&2
   if [ "${PIPESTATUS[0]}" -ne 0 ]; then
     echo "${project}: ERROR: make failed ${srcdir}" >&2
@@ -474,7 +474,7 @@ buildMakeProject(){
   build_time=$(( SECONDS - build_start ))
   displaytime project="${project}" task="build" time=$build_time label="Build runtime: "
 
-  if [ -z "${localtoolchain}" ]; then
+  if [ ! -z "${localtoolchain}" ]; then
     setTargetBuildVariables
   fi
 
@@ -617,7 +617,7 @@ fi
 ##    Build gsoap
 ##
 #################################################################
-gsoap_version=2.8.134
+gsoap_version=2.8.147
 export PATH="$SUBPROJECTS_ROOT/gsoap_$gsoap_version/gsoap-2.8/dist/bin:$PATH"
 if [ ! -z "$(checkLibrary name=gsoap native=true static=true path="${SUBPROJECTS_ROOT}/gsoap_$gsoap_version/gsoap-2.8/dist/lib")" ]; then
   downloadAndExtract project="gsoap" file="gsoap_$gsoap_version.zip" path="https://sourceforge.net/projects/gsoap2/files/gsoap_$gsoap_version.zip/download"

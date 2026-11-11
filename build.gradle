@@ -2,25 +2,27 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 buildscript {
-  ext {
-      kotlin_version = '2.2.10'
-  }
+    ext {
+        kotlin_version = '2.4.10'
+    }
     repositories {
-    mavenCentral()
-    google()
-  }
-  dependencies {
-    classpath 'com.android.tools.build:gradle:9.5.1'
-    //classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-    classpath "androidx.navigation:navigation-safe-args-gradle-plugin:2.10.2"
-  }
+        mavenCentral()
+        //gradlePluginPortal()
+        google()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:9.5.1'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath "androidx.navigation:navigation-safe-args-gradle-plugin:2.10.2"
+    }
 }
 
 allprojects {
-  repositories {
-    mavenCentral()
-    google()
-  }
+    repositories {
+        mavenCentral()
+        //gradlePluginPortal()
+        google()
+    }
 }
 
 apply plugin: 'com.android.application'
@@ -35,7 +37,7 @@ android {
         compilerOptions {
             // Configure common compiler options for all targets
             jvmTarget.set(JvmTarget.JVM_21)
-            languageVersion.set(KotlinVersion.KOTLIN_2_0) // Specify Kotlin language version
+            //languageVersion.set(KotlinVersion.KOTLIN_2_0) // Specify Kotlin language version
             allWarningsAsErrors.set(false) // Treat all warnings as errors
             freeCompilerArgs.addAll("-opt-in=kotlin.RequiresOptIn", "-Xinline-classes") // Add extra compiler arguments
         }
@@ -44,7 +46,7 @@ android {
 
     defaultConfig {
         applicationId "net.quedale.andronvif"
-        minSdkVersion 24
+        minSdkVersion 29 // Required for GStreamer 1.29
         versionCode 1
         versionName "1.0"
         javaCompileOptions {
@@ -86,7 +88,7 @@ android {
                 targets "andronvif"
 
                 // All archs except MIPS and MIPS64 are supported
-                abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
+                abiFilters 'x86_64'
             }
         }
     }
@@ -114,7 +116,7 @@ android {
             path 'jni/CMakeLists.txt'
         }
     }
-    ndkVersion = '25.2.9519653'
+    ndkVersion = '29.0.14206865'
     namespace = 'net.quedale.andronvif'
 
     buildFeatures {
