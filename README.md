@@ -33,10 +33,11 @@ Although I may still invest time in it if the AOSP community is interested in it
 
 # How to build 
 ## Step 1 : Download Android SDK
+You can either use Android Studio SDK Manager GUI or the CLI tool.
+
 ### Using Android Studio
 Configuring Android Studio can be a pain depending on the distro, so I won't bother trying to create a guide.
-
-You can either use Android Studio SDK Manager GUI or the CLI tool.
+You can search for appropriate instructions online for your specific distro.
 
 ### Using the CLI:
 You will need to download [sdkmanager](https://developer.android.com/tools/sdkmanager) and use it to download Android SDK 17 and Android NDK 29.
@@ -59,7 +60,7 @@ sdkmanager --install "ndk;29.0.14206865" --channel=0
 ```
 
 ## Step 2 : Environment config
-Create "local.properties" files and set your Android SDL location.
+Create "local.properties" file at the root of the project and set your Android SDK location.
 Example:
 ```
 sdk.dir=/home/awesomeusername/Android/Sdk
