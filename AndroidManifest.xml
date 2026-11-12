@@ -3,8 +3,10 @@
       android:versionCode="1"
       android:versionName="1.0">
 
-    <!-- This permission is required to discover or connect to cameras -->
+    <!-- This permission is required to connect to cameras anywhere-->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- This permission is required to discovery local camera using UPnP -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
 
     <application
                 android:name="net.quedale.andronvif.AndrONVIFApplication"

@@ -1,7 +1,7 @@
 # AndrONVIF
 Android Onvif Manager for Android
 
-![Application Capture](res/Images/AppScreenshot.png?raw=true "AndrONVIF Default Screen")
+![Application Capture](Images/AppScreenshot.png?raw=true "AndrONVIF Default Screen")
 
 # Description
 Very simple android client implementation using [OnvifSoapLib](https://github.com/Quedale/OnvifSoapLib) with JNI wrapper.

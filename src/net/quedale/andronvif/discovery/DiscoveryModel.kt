@@ -1,6 +1,8 @@
 package net.quedale.andronvif.discovery
 
+import android.Manifest
 import android.app.Application
+import android.os.Build
 import android.util.Log
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
@@ -9,9 +11,11 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import net.quedale.andronvif.jni.AndrONVIFDevice
-import net.quedale.andronvif.jni.DiscoveryMatch
 import net.quedale.andronvif.jni.DiscoveryService
 import net.quedale.andronvif.utils.AbstractModel
+
+import net.quedale.andronvif.PermissionHandler
+import net.quedale.andronvif.jni.DiscoveryMatch
 
 class DiscoveryModel(application: Application) : AbstractModel<DiscoveryModel.State>(
     application
@@ -43,7 +47,6 @@ class DiscoveryModel(application: Application) : AbstractModel<DiscoveryModel.St
     }
 
     override fun onCleared() {
-        super.onCleared()
         for (device in prepostDevices) {
             device.unref()
         }
@@ -51,12 +54,11 @@ class DiscoveryModel(application: Application) : AbstractModel<DiscoveryModel.St
         devices.value = prepostDevices
     }
 
-    fun start() {
-        setState(State.INITIALIZING)
+    private fun launch(){
         viewModelScope.launch(Dispatchers.IO){
             setState(State.LOADING)
             val service = DiscoveryService()
-            service.discover { match: DiscoveryMatch? ->
+            service.discover() { match: DiscoveryMatch? ->
                 Log.d(
                     "DiscoveryModel",
                     "Device Found length " + match!!.addressCount + " : " + match.getAddressAt(0)
@@ -67,8 +69,21 @@ class DiscoveryModel(application: Application) : AbstractModel<DiscoveryModel.St
                 if (match.addressCount > 0) addDevice(AndrONVIFDevice(match))
             }
 
-            service.unref()
+            service.unref();
             setState(State.DONE)
+        }
+    }
+
+    fun start() {
+        setState(State.INITIALIZING)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN) {
+            PermissionHandler.getInstance().checkAndRequestPermission(
+                Manifest.permission.ACCESS_LOCAL_NETWORK
+            ) {
+                launch();
+            }
+        } else {
+            launch();
         }
     }
 }

@@ -2,7 +2,6 @@ package net.quedale.andronvif;
 
 import android.app.PictureInPictureParams;
 import android.content.pm.PackageManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -16,13 +15,16 @@ import net.quedale.andronvif.player.PlayerFragment;
 
 public class AndrONVIFActivity extends AppCompatActivity {
 
+    public static AndrONVIFActivity ACTIVITY;
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        ACTIVITY = this;
         Log.d("AndrONVIFActivity", "onCreate");
 
         MainBinding binding = MainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        PermissionHandler.getInstance();
     }
 
     protected void onDestroy() {
@@ -47,17 +49,15 @@ public class AndrONVIFActivity extends AppCompatActivity {
 
         if (currentFragment instanceof PlayerFragment) {
             Log.d("AndrONVIFActivity","leaving application");
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)) {
-                    Log.d("AndrONVIFActivity","switching to Picture-In-Picture");
-                    // TODO Extract aspectRation from surface dimension
-                    // Rational aspectRatio = new Rational(16, 9); // Example: 16:9 aspect ratio
-                    enterPictureInPictureMode(new PictureInPictureParams.Builder()
-                            // .setAspectRatio(aspectRatio)
-                            // Add custom actions if needed
-                            // .setActions(...)
-                            .build());
-                }
+            if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)) {
+                Log.d("AndrONVIFActivity", "switching to Picture-In-Picture");
+                // TODO Extract aspectRation from surface dimension
+                // Rational aspectRatio = new Rational(16, 9); // Example: 16:9 aspect ratio
+                enterPictureInPictureMode(new PictureInPictureParams.Builder()
+                        // .setAspectRatio(aspectRatio)
+                        // Add custom actions if needed
+                        // .setActions(...)
+                        .build());
             }
         }
     }
