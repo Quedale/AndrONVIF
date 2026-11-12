@@ -8,4 +8,5 @@
     <dimen name="borderRadius">8dp</dimen>
     <dimen name="borderSize">2dp</dimen>
     <dimen name="smallerBorderSize">1dp</dimen>
+    <dimen name="text_size_large">25sp</dimen>
 </resources>

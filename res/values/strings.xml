@@ -16,6 +16,7 @@
     
     <string name="add_device_fragment_label">Add Device</string>
     <string name="add_device_loading_label">Please wait...</string>
+    <string name="add_device_no_device_found">No ONVIF device found on network.</string>
     <string name="add_device_cancel_contentdesc">Cancel manual wizard</string>
     <string name="add_device_add_contentdesc">Add configured device</string>
     <string name="add_device_chckproto_text">HTTPS</string>
@@ -23,4 +24,5 @@
     <string name="add_device_password_hint">Password</string>
     <string name="add_device_port_hint">Port number</string>
     <string name="add_device_username_hint">Username</string>
+    <string name="add_device_manually">Manually</string>
 </resources>

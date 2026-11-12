@@ -5,6 +5,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.core.graphics.Insets;
@@ -68,8 +69,15 @@ public class DiscoveryFragment extends Fragment {
                     DiscoveryFragment.this.countDownTimer.startProgress();
                     break;
                 case DONE:
+                    if(model.getDevices() == null || model.getDevices().isEmpty()){
+                        Log.d("DiscoveryFragment","No device found on network.");
+                        TextView lblNotFound = this.binding.noDeviceFoundLbl;//this.findViewById(R.id.devpreview_loading_overlay);
+                        lblNotFound.setVisibility(View.VISIBLE);
+                    }
                     DiscoveryFragment.this.binding.discoveryProgress.setVisibility(View.INVISIBLE);
                     break;
+                default:
+                    throw new IllegalStateException("Unexpected value: " + newstate);
             }
         });
 

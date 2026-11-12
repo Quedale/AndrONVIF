@@ -36,6 +36,10 @@ class DiscoveryModel(application: Application) : AbstractModel<DiscoveryModel.St
         devices.observe(owner, observer)
     }
 
+    fun getDevices(): MutableList<AndrONVIFDevice>? {
+        return devices.value;
+    }
+
     fun addDevice(device: AndrONVIFDevice) {
         if (prepostDevices.contains(device)) {
             Log.d("DiscoveryModel", "Device already found")
@@ -57,7 +61,7 @@ class DiscoveryModel(application: Application) : AbstractModel<DiscoveryModel.St
     private fun launch(){
         viewModelScope.launch(Dispatchers.IO){
             setState(State.LOADING)
-            val service = DiscoveryService()
+            val service = DiscoveryService();
             service.discover() { match: DiscoveryMatch? ->
                 Log.d(
                     "DiscoveryModel",

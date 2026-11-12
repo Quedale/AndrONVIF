@@ -34,14 +34,26 @@
             </androidx.recyclerview.widget.RecyclerView>
         </androidx.core.widget.NestedScrollView>
     </LinearLayout>
-    <net.quedale.andronvif.utils.AccessibleFloatingActionButton
+    <TextView
+        android:id="@+id/no_device_found_lbl"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:visibility="gone"
+        android:textSize="@dimen/text_size_large"
+        android:textStyle="bold"
+        android:text="@string/add_device_no_device_found" />
+
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
         android:id="@+id/manual_add_btn"
+        android:text="@string/add_device_manually"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|start"
         android:layout_margin="@dimen/fab_margin"
         android:contentDescription="@string/device_discovery_add_contentdesc"
         app:srcCompat="@android:drawable/ic_input_add"
+        app:icon="@android:drawable/ic_input_add"
         app:tint="?android:textColorPrimary"/>
 
     <net.quedale.andronvif.utils.AccessibleFloatingActionButton
