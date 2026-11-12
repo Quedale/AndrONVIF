@@ -25,4 +25,5 @@
     <string name="add_device_port_hint">Port number</string>
     <string name="add_device_username_hint">Username</string>
     <string name="add_device_manually">Manually</string>
+    <string name="searching_devices" >Searching devices...</string>
 </resources>

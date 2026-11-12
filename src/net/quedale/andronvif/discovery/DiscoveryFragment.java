@@ -74,6 +74,8 @@ public class DiscoveryFragment extends Fragment {
                         TextView lblNotFound = this.binding.noDeviceFoundLbl;//this.findViewById(R.id.devpreview_loading_overlay);
                         lblNotFound.setVisibility(View.VISIBLE);
                     }
+                    TextView lblNotFound = this.binding.searchingDevicesLbl;//this.findViewById(R.id.devpreview_loading_overlay);
+                    lblNotFound.setVisibility(View.GONE);
                     DiscoveryFragment.this.binding.discoveryProgress.setVisibility(View.INVISIBLE);
                     break;
                 default:

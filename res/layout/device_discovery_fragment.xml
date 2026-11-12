@@ -35,6 +35,15 @@
         </androidx.core.widget.NestedScrollView>
     </LinearLayout>
     <TextView
+        android:id="@+id/searching_devices_lbl"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:textStyle="bold"
+        android:textSize="@dimen/text_size_large"
+        android:text="@string/searching_devices" />
+
+    <TextView
         android:id="@+id/no_device_found_lbl"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
