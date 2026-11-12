@@ -95,6 +95,7 @@ class DeviceListViewModel(application: Application) : AbstractModel<DeviceListVi
     }
     fun CoroutineScope.initDevice(device: AndrONVIFDevice){
         launch(Dispatchers.IO){
+            Log.d("DeviceListViewModel", "Fetching scopes : " + device.url)
             when (val scopefault = device.fetchScopes()) {
                 JNISoapObject.SoapFault.SOAP_FAULT_NONE -> {
                     withContext(Dispatchers.Main) {
@@ -107,6 +108,7 @@ class DeviceListViewModel(application: Application) : AbstractModel<DeviceListVi
             }
         }
         launch(Dispatchers.IO){
+            Log.d("DeviceListViewModel", "Fetching snapshot : " + device.url)
             val snapshot = device.fetchSnapshot()
             when (val snapfault = snapshot.fault) {
                 JNISoapObject.SoapFault.SOAP_FAULT_NONE -> {

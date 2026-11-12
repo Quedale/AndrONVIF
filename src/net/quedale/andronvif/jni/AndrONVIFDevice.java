@@ -1,5 +1,7 @@
 package net.quedale.andronvif.jni;
 
+import android.util.Log;
+
 import androidx.annotation.MainThread;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.MutableLiveData;
@@ -60,6 +62,11 @@ public class AndrONVIFDevice extends JNIObject implements Serializable/*implemen
     }
 
     public JNISoapObject.SoapFault authenticate(){
+        Integer val = stateflags.getValue();
+        if(val != null && (val & AndrONVIFDevice.STATE_AUTHENTICATED_MASK) != 0){
+            Log.d("AndrONVIFDevice","Device already authenticated.");
+            return JNISoapObject.SoapFault.SOAP_FAULT_NONE;
+        }
         return JNISoapObject.SoapFault.values()[AndrONVIFDevice.authenticate(this.pointer_address)];
     }
 
@@ -113,6 +120,9 @@ public class AndrONVIFDevice extends JNIObject implements Serializable/*implemen
 
     @MainThread
     public void setState(int state){
+        if(stateflags.getValue() != null){
+            state = state + stateflags.getValue();
+        }
         stateflags.setValue(state);
     }
 
