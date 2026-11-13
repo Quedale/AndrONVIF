@@ -3,16 +3,26 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-
-    <org.freedesktop.gstreamer.GStreamerSurfaceView
-        android:id="@+id/surface_video"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="match_parent">
+        <org.freedesktop.gstreamer.GStreamerSurfaceView
+            android:id="@+id/surface_video"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
 
-    <TextView
-        android:id="@+id/device_onvif_url"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="@dimen/grid_margin"
-        android:layout_gravity="bottom|start"/>
+        <Button
+            android:id="@+id/profile_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/profile_label" />
+
+        <TextView
+            android:id="@+id/device_onvif_url"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="@dimen/grid_margin"
+            android:layout_gravity="bottom|start"/>
+
+    </FrameLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
