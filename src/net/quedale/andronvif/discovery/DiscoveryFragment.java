@@ -30,6 +30,7 @@ public class DiscoveryFragment extends Fragment {
     private ProgressBarTimer countDownTimer;
     private DeviceListViewModel activity_model;
     private DiscoveryModel model;
+    private boolean found_new_device = false;
 
     @Override
     public View onCreateView(
@@ -69,8 +70,8 @@ public class DiscoveryFragment extends Fragment {
                     DiscoveryFragment.this.countDownTimer.startProgress();
                     break;
                 case DONE:
-                    if(model.getDevices() == null || model.getDevices().isEmpty()){
-                        Log.d("DiscoveryFragment","No device found on network.");
+                    if(!found_new_device){
+                        Log.d("DiscoveryFragment","No device found on network");
                         TextView lblNotFound = this.binding.noDeviceFoundLbl;//this.findViewById(R.id.devpreview_loading_overlay);
                         lblNotFound.setVisibility(View.VISIBLE);
                     }
@@ -91,6 +92,7 @@ public class DiscoveryFragment extends Fragment {
                     Log.d(DiscoveryFragment.class.getSimpleName(),"Device already added : " + activiyDevices.contains(device));
                     continue;
                 }
+                found_new_device = true;
                 adapter.addDevice(device);
             }
         });
