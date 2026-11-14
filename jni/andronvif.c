@@ -5,6 +5,7 @@
 #include "andronvif_scopes.h"
 #include "andronvif_soapobject.h"
 #include "andronvif_snapshot.h"
+#include "andronvif_profile.h"
 
 #include <unistd.h>
 #include <android/log.h>
@@ -60,6 +61,7 @@ jint JNI_OnLoad(JavaVM *vm, void *reserved) {
     AndrONVIFScopes__register_jni_class(env);
     SoapObject__register_jni_class(env);
     AndrONVIFSnapshot__register_jni_class(env);
+    AndrONVIFProfile__register_jni_class(env);
     //    start_logger("mylogger");
 
     return JNI_VERSION_1_4;

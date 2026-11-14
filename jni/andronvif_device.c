@@ -90,6 +90,17 @@ AndrONVIFDevice__fetchScopes(JNIEnv * env, jclass klass, jlong pointer) {
 }
 
 JNIEXPORT jlong JNICALL
+AndrONVIFDevice__fetchProfiles(JNIEnv * env, jclass klass, jlong pointer) {
+    g_return_val_if_fail(pointer != 0, 0);
+    g_return_val_if_fail(ONVIF_IS_DEVICE((void*)pointer), 0);
+    OnvifDevice * dev = ONVIF_DEVICE((void*)pointer);
+    OnvifMediaService * media_service = OnvifDevice__get_media_service(dev);
+    OnvifMediaProfiles * profiles = OnvifMediaService__getProfiles(media_service);
+
+    return (jlong)profiles;
+}
+
+JNIEXPORT jlong JNICALL
 AndrONVIFDevice__fetchSnapshot(JNIEnv * env, jclass klass, jlong pointer, jint profile_index) {
     g_return_val_if_fail(pointer != 0, 0);
     g_return_val_if_fail(ONVIF_IS_DEVICE((void*)pointer), 0);
@@ -109,6 +120,7 @@ static JNINativeMethod native_methods[] = {
         {"setCredentials", "(JLjava/lang/String;Ljava/lang/String;)V", (void *) AndrONVIFDevice__setCredentials},
         {"authenticate", "(J)I", (void *) AndrONVIFDevice__authenticate},
         {"fetchScopes", "(J)J", (void *) AndrONVIFDevice__fetchScopes},
+        {"fetchProfiles", "(J)J", (void *) AndrONVIFDevice__fetchProfiles},
         {"fetchSnapshot", "(JI)J", (void *) AndrONVIFDevice__fetchSnapshot}
 };
 

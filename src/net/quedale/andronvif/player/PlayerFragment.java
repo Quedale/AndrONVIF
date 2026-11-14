@@ -40,7 +40,7 @@ public class PlayerFragment  extends Fragment {
         windowInsetsController.setSystemBarsBehavior(WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
         windowInsetsController.hide(WindowInsetsCompat.Type.systemBars());
 
-        binding.profileBtn.setOnClickListener(v -> new ProfileSelectionFragment().show(PlayerFragment.this.requireActivity().getSupportFragmentManager(), "tag"));
+        binding.profileBtn.setOnClickListener(v -> ProfileSelectionFragment.newInstance(player.getDevice()).show(PlayerFragment.this.requireActivity().getSupportFragmentManager(), "tag"));
         return binding.getRoot();
     }
 

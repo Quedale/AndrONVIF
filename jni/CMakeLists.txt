@@ -72,6 +72,7 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
         andronvif.c
         andronvif_device.c
         andronvif_player.c
+        andronvif_profile.c
         andronvif_scopes.c
         andronvif_snapshot.c
         andronvif_soapobject.c

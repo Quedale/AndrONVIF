@@ -35,6 +35,9 @@ public class AndrONVIFDevice extends JNIObject implements Serializable/*implemen
     private static native int authenticate(long pointer);
     //Not FastNative because of slow IO calls
     private static native long fetchScopes(long pointer);
+
+    private static native long fetchProfiles(long pointer);
+
     //Not FastNative because of slow IO calls
     private static native long fetchSnapshot(long pointer, int profile_index);
 
@@ -43,6 +46,7 @@ public class AndrONVIFDevice extends JNIObject implements Serializable/*implemen
     private String hardware = null;
     private String name = null;
     private AndrONVIFSnapshot snapshot = null;
+    private AndrONVIFMediaProfiles profiles = null;
 
     public AndrONVIFDevice(String url) {
         super(nativeNew(url));
@@ -76,6 +80,16 @@ public class AndrONVIFDevice extends JNIObject implements Serializable/*implemen
 
     public AndrONVIFSnapshot getSnapshot(){
         return this.snapshot;
+    }
+
+    public AndrONVIFMediaProfiles fetchProfiles(){
+        if(profiles != null){
+            profiles.unref();
+            profiles = null;
+        }
+
+        profiles = new AndrONVIFMediaProfiles(fetchProfiles(this.pointer_address));
+        return profiles;
     }
 
     public AndrONVIFSnapshot fetchSnapshot(){

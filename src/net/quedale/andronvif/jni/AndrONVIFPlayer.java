@@ -37,6 +37,7 @@ public class AndrONVIFPlayer extends JNIObject implements SurfaceHolder.Callback
     private final TextView txtview;
     private final GStreamerSurfaceView view;
     private static  boolean gst_initialized = false;
+    private AndrONVIFDevice device;
 
     public AndrONVIFPlayer(GStreamerSurfaceView view, TextView txtview) {
         super(nativeNew());
@@ -75,7 +76,12 @@ public class AndrONVIFPlayer extends JNIObject implements SurfaceHolder.Callback
     }
 
     public void setDevice(AndrONVIFDevice device){
+        this.device = device;
         setDevice(this.pointer_address,device.pointer_address);
+    }
+
+    public AndrONVIFDevice getDevice() {
+        return this.device;
     }
 
     public void play(){
