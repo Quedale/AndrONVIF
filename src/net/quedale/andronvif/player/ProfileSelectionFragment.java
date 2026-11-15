@@ -15,13 +15,11 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.os.BundleCompat;
 import androidx.fragment.app.DialogFragment;
-import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
 import net.quedale.andronvif.R;
 import net.quedale.andronvif.databinding.ProfileSelectionFragmentBinding;
 import net.quedale.andronvif.jni.AndrONVIFDevice;
-import net.quedale.andronvif.jni.AndrONVIFMediaProfiles;
 
 public class ProfileSelectionFragment extends DialogFragment {
         private ProfileSelectionFragmentBinding binding = null;
@@ -39,6 +37,10 @@ public class ProfileSelectionFragment extends DialogFragment {
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         super.onCreateView(inflater,container,savedInstanceState);
         binding = ProfileSelectionFragmentBinding.inflate(inflater, container, false);
+
+        ProfileListAdapter<ProfilePreview> adapter = getProfilePreviewAbstractDeviceListAdapter();
+        binding.profileRecyclerView.setAdapter(adapter);
+
         model.observeState(getViewLifecycleOwner(), newstate -> {
                 Log.d("ProfileSelectionFragment", "New profile list state !! : " + newstate);
                 switch(newstate){
@@ -47,24 +49,16 @@ public class ProfileSelectionFragment extends DialogFragment {
                         ProfileSelectionFragment.this.binding.profileLoading.setVisibility(View.VISIBLE);
                         break;
                     case DONE:
-                        ProfileSelectionFragment.this.binding.profileLoading.setVisibility(View.INVISIBLE);
-                        ProfileSelectionFragment.this.binding.tempText.setVisibility(View.VISIBLE);
+                        ProfileSelectionFragment.this.binding.profileLoading.setVisibility(View.GONE);
+                        ProfileSelectionFragment.this.binding.profileRecyclerView.setVisibility(View.VISIBLE);
                         break;
                 }
             });
 
-        model.observeProfiles(getViewLifecycleOwner(), new Observer<AndrONVIFMediaProfiles>(){
-            @Override
-            public void onChanged(AndrONVIFMediaProfiles profiles) {
-                Log.d("ProfileSelectionFragment","Profile count : " + profiles.getSize());
-                for (int i=0;i<profiles.getSize();i++){
-                    AndrONVIFMediaProfiles.AndrONVIFProfile profile = profiles.getProfileAt(i);
-                    Log.d("ProfileSelectionFragment","name : " + profile.getName());
-                    Log.d("ProfileSelectionFragment","token : " + profile.getToken());
-                    Log.d("ProfileSelectionFragment","index : " + profile.getIndex());
-                    Log.d("ProfileSelectionFragment","fixed : " + profile.isFixed());
-                }
-            }
+        model.observeProfiles(getViewLifecycleOwner(), profiles -> {
+            Log.d("ProfileSelectionFragment","onChanged");
+
+            adapter.setProfiles(profiles);
         });
 
         binding.profileDialogLayout.setOnClickListener(v -> ProfileSelectionFragment.this.dismiss());
@@ -72,6 +66,12 @@ public class ProfileSelectionFragment extends DialogFragment {
             //Placeholder to swallow click to prevent passing the click even below
         });
         return binding.getRoot();
+    }
+
+    @NonNull
+    private ProfileListAdapter<ProfilePreview> getProfilePreviewAbstractDeviceListAdapter() {
+        ProfileListAdapter.ProfileViewSetter<ProfilePreview> setter = ProfilePreview::setProfile;
+        return new ProfileListAdapter<>(setter);
     }
 
     @NonNull

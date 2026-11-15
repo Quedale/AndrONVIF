@@ -84,7 +84,6 @@ public class AndrONVIFDevice extends JNIObject implements Serializable/*implemen
 
     public AndrONVIFMediaProfiles fetchProfiles(){
         if(profiles != null){
-            profiles.unref();
             profiles = null;
         }
 

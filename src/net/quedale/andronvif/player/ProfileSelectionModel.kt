@@ -14,7 +14,7 @@ import net.quedale.andronvif.utils.AbstractModel
 class ProfileSelectionModel(application: Application) : AbstractModel<ProfileSelectionModel.State>(
     application
 ) {
-    private val profiles = MutableLiveData<AndrONVIFMediaProfiles>()
+    private val profiles = MutableLiveData<AndrONVIFMediaProfiles?>()
     var device: AndrONVIFDevice? = null
 
     enum class State {
@@ -24,19 +24,29 @@ class ProfileSelectionModel(application: Application) : AbstractModel<ProfileSel
     }
 
 
-    fun observeProfiles(owner: LifecycleOwner, observer: Observer<AndrONVIFMediaProfiles>) {
+    fun observeProfiles(owner: LifecycleOwner, observer: Observer<AndrONVIFMediaProfiles?>) {
         profiles.observe(owner, observer)
     }
 
     fun start(){
         if(device == null){
-            return;
+            return
         }
+
+        //Clear previous value to prevent using a release pointer.
+        //Alternatively, reference count could be increased and decreased as needed
+        profiles.value = null
         setState(State.INITIALIZING)
         kotlinx.coroutines.MainScope().launch(Dispatchers.IO) { //Launching with ApplicationScope since this list is the primary model
             coroutineScope {
                 setState(State.LOADING)
-                profiles.postValue(device!!.fetchProfiles())
+
+                val newprofiles = device!!.fetchProfiles()
+                newprofiles.ref()
+                kotlinx.coroutines.MainScope().launch {
+                    profiles.value = newprofiles
+                    newprofiles.unref()
+                }
             }
             setState(State.DONE)
         }
