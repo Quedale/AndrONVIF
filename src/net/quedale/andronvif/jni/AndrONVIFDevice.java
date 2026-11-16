@@ -9,12 +9,10 @@ import androidx.lifecycle.Observer;
 
 import org.jspecify.annotations.NonNull;
 
-import java.io.Serializable;
-
 import dalvik.annotation.optimization.CriticalNative;
 import dalvik.annotation.optimization.FastNative;
 
-public class AndrONVIFDevice extends JNIObject implements Serializable/*implements Parcelable*/ {
+public class AndrONVIFDevice extends JNIObject {
     public static final int STATE_AUTHENTICATED_MASK = 1;
     public static final int STATE_SCOPE_MASK = 2;
     public static final int STATE_SNAP_MASK = 4;
@@ -47,6 +45,7 @@ public class AndrONVIFDevice extends JNIObject implements Serializable/*implemen
     private String name = null;
     private AndrONVIFSnapshot snapshot = null;
     private AndrONVIFMediaProfiles profiles = null;
+    private final MutableLiveData<AndrONVIFMediaProfiles.AndrONVIFProfile> selected_profile = new MutableLiveData<>();
 
     public AndrONVIFDevice(String url) {
         super(nativeNew(url));
@@ -169,5 +168,17 @@ public class AndrONVIFDevice extends JNIObject implements Serializable/*implemen
             this.snapshot.unref();
             this.snapshot = null;
         }
+    }
+
+    public void setSelectedProfile(AndrONVIFMediaProfiles.AndrONVIFProfile profile) {
+        this.selected_profile.postValue(profile);
+    }
+
+    public AndrONVIFMediaProfiles.AndrONVIFProfile getSelectedProfile() {
+        return this.selected_profile.getValue();
+    }
+
+    public void observeSelectedProfile(LifecycleOwner owner, Observer<AndrONVIFMediaProfiles.AndrONVIFProfile> observer) {
+        selected_profile.observe(owner, observer);
     }
 }

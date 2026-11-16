@@ -29,6 +29,15 @@ class DeviceListViewModel(application: Application) : AbstractModel<DeviceListVi
 
     private val prepostDevices: MutableList<AndrONVIFDevice> = ArrayList()
     private val devices = MutableLiveData<MutableList<AndrONVIFDevice>>()
+    private var selectedDevice: AndrONVIFDevice? = null
+
+    fun getSelectedDevice(): AndrONVIFDevice? {
+        return selectedDevice
+    }
+
+    fun setSelectedDevice(device: AndrONVIFDevice) {
+        selectedDevice = device
+    }
 
     fun observeDevices(owner: LifecycleOwner, observer: Observer<in MutableList<AndrONVIFDevice>>) {
         devices.observe(owner, observer)
@@ -68,7 +77,7 @@ class DeviceListViewModel(application: Application) : AbstractModel<DeviceListVi
         }
 
         //Clean up devices that are already rendered
-        if (!devices.isEmpty()) {
+        if (devices.isNotEmpty()) {
             val iterator = devices.iterator()
             while (iterator.hasNext()) {
                 val androdev = iterator.next()
@@ -214,7 +223,6 @@ class DeviceListViewModel(application: Application) : AbstractModel<DeviceListVi
     }
 
     override fun onCleared() {
-        super.onCleared()
         for (device in prepostDevices) {
             device.unref()
         }

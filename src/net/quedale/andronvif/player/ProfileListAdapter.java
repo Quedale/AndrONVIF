@@ -10,14 +10,18 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import net.quedale.andronvif.R;
+import net.quedale.andronvif.jni.AndrONVIFDevice;
 import net.quedale.andronvif.jni.AndrONVIFMediaProfiles;
 
 public class ProfileListAdapter <T extends View> extends RecyclerView.Adapter<ProfileListAdapter.ProfileListViewHolder<T>> {
     private AndrONVIFMediaProfiles profiles = null;
+    private AndrONVIFDevice device;
     private final ProfileListAdapter.ProfileViewSetter<T> setter;
+    private final View.OnClickListener listener;
 
-    public ProfileListAdapter(ProfileViewSetter<T> setter) {
+    public ProfileListAdapter(ProfileViewSetter<T> setter, View.OnClickListener listener) {
         this.setter = setter;
+        this.listener = listener;
     }
 
     @NonNull
@@ -25,13 +29,13 @@ public class ProfileListAdapter <T extends View> extends RecyclerView.Adapter<Pr
     public ProfileListViewHolder<T> onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         Log.d("ProfileListAdapter","onCreateViewHolder");
         View device_view = LayoutInflater.from(parent.getContext()).inflate(R.layout.profile_preview, parent, false);
-        return new ProfileListAdapter.ProfileListViewHolder<>(device_view,R.id.profilepreview,setter);
+        return new ProfileListAdapter.ProfileListViewHolder<>(device_view,R.id.profilepreview,setter,listener);
     }
 
     @Override
     public void onBindViewHolder(@NonNull ProfileListViewHolder<T> holder, int position) {
         Log.d("ProfileListAdapter","onBindViewHolder");
-        holder.setProfile(profiles.getProfileAt(position));
+        holder.setProfile(profiles.getProfileAt(position),device);
     }
 
     @Override
@@ -43,7 +47,7 @@ public class ProfileListAdapter <T extends View> extends RecyclerView.Adapter<Pr
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    public void setProfiles(AndrONVIFMediaProfiles profiles){
+    public void setProfiles(AndrONVIFMediaProfiles profiles, AndrONVIFDevice device){
 
         if(profiles == null){
             if(this.profiles != null){
@@ -55,6 +59,8 @@ public class ProfileListAdapter <T extends View> extends RecyclerView.Adapter<Pr
         }
 
         this.profiles = profiles;
+        this.device = device;
+        //TODO Compare new and old list and notify changes only
         notifyDataSetChanged();
     }
 
@@ -65,27 +71,26 @@ public class ProfileListAdapter <T extends View> extends RecyclerView.Adapter<Pr
     public static class ProfileListViewHolder<T extends View> extends RecyclerView.ViewHolder {
         private final T view;
         private AndrONVIFMediaProfiles.AndrONVIFProfile profile;
+        private AndrONVIFDevice device;
         private final ProfileViewSetter<T> setter;
 
-        public ProfileListViewHolder(@NonNull View itemView, int viewid, ProfileViewSetter<T> setter) {
+        public ProfileListViewHolder(@NonNull View itemView, int viewid, ProfileViewSetter<T> setter, View.OnClickListener listener) {
             super(itemView);
             view = itemView.findViewById(viewid);
             this.setter = setter;
+
             itemView.setOnClickListener(v -> {
-                if(profile == null){
-                    Log.e("ProfileListAdapter", "MediaProfile is unexpectedly null");
-                    return;
-                }
-                Log.d("DeviceListAdapter","Clicked " + profile.getName());
-                //TODO Select profile to view
+                device.setSelectedProfile(this.profile);
+                listener.onClick(v);
             });
         }
         public T getView(){
             return view;
         }
 
-        public void setProfile(AndrONVIFMediaProfiles.AndrONVIFProfile profile){
+        public void setProfile(AndrONVIFMediaProfiles.AndrONVIFProfile profile, AndrONVIFDevice device){
             this.profile = profile;
+            this.device = device;
             setter.setProfile(view,profile);
         }
     }

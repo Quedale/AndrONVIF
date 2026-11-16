@@ -1,6 +1,8 @@
 package net.quedale.andronvif.player;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.SurfaceHolder;
@@ -13,16 +15,19 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 
 import net.quedale.andronvif.R;
 import net.quedale.andronvif.discovery.DiscoveryFragment;
 import net.quedale.andronvif.jni.AndrONVIFDevice;
 import net.quedale.andronvif.databinding.PlayerFragmentBinding;
 import net.quedale.andronvif.jni.AndrONVIFPlayer;
+import net.quedale.andronvif.list.DeviceListViewModel;
 
 public class PlayerFragment  extends Fragment {
     private PlayerFragmentBinding binding;
     private AndrONVIFPlayer player;
+    private DeviceListViewModel activity_model;
 
     @Override
     public View onCreateView(
@@ -40,13 +45,16 @@ public class PlayerFragment  extends Fragment {
         windowInsetsController.setSystemBarsBehavior(WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
         windowInsetsController.hide(WindowInsetsCompat.Type.systemBars());
 
-        binding.profileBtn.setOnClickListener(v -> ProfileSelectionFragment.newInstance(player.getDevice()).show(PlayerFragment.this.requireActivity().getSupportFragmentManager(), "tag"));
+        binding.profileBtn.setOnClickListener(v -> new ProfileSelectionFragment().showNow(PlayerFragment.this.requireActivity().getSupportFragmentManager(), "tag"));
         return binding.getRoot();
     }
 
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
-        if (getArguments() != null) {
-            AndrONVIFDevice device = PlayerFragmentArgs.fromBundle(getArguments()).getDevice();
+        if(activity_model == null)
+            activity_model = new ViewModelProvider(this.requireActivity()).get(DeviceListViewModel.class);
+        
+        AndrONVIFDevice device = activity_model.getSelectedDevice();
+        if (device != null) {
             Log.d(PlayerFragment.class.getSimpleName(),"Playing : " + device.getUrl());
 
             player.setDevice(device);
@@ -56,8 +64,16 @@ public class PlayerFragment  extends Fragment {
 
             SurfaceHolder sh = binding.surfaceVideo.getHolder();
             sh.addCallback(player);
+
+            device.observeSelectedProfile(getViewLifecycleOwner(), profile -> {
+                Log.d("PlayerFragment","MediaProfile changed : " + profile.getIndex() + " : " + profile.getName());
+                player.setDevice(device);
+                player.stop();
+                Handler mainHandler = new Handler(Looper.getMainLooper());
+                mainHandler.post(() -> player.play());
+            });
         } else {
-            Log.e(PlayerFragment.class.getSimpleName(), "No argument bundle.");
+            Log.e(PlayerFragment.class.getSimpleName(), "No device selected.");
         }
     }
 

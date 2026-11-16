@@ -36,10 +36,6 @@ class DiscoveryModel(application: Application) : AbstractModel<DiscoveryModel.St
         devices.observe(owner, observer)
     }
 
-    fun getDevices(): MutableList<AndrONVIFDevice>? {
-        return devices.value;
-    }
-
     fun addDevice(device: AndrONVIFDevice) {
         if (prepostDevices.contains(device)) {
             Log.d("DiscoveryModel", "Device already found")
@@ -61,8 +57,8 @@ class DiscoveryModel(application: Application) : AbstractModel<DiscoveryModel.St
     private fun launch(){
         viewModelScope.launch(Dispatchers.IO){
             setState(State.LOADING)
-            val service = DiscoveryService();
-            service.discover() { match: DiscoveryMatch? ->
+            val service = DiscoveryService()
+            service.discover { match: DiscoveryMatch? ->
                 Log.d(
                     "DiscoveryModel",
                     "Device Found length " + match!!.addressCount + " : " + match.getAddressAt(0)
@@ -73,7 +69,7 @@ class DiscoveryModel(application: Application) : AbstractModel<DiscoveryModel.St
                 if (match.addressCount > 0) addDevice(AndrONVIFDevice(match))
             }
 
-            service.unref();
+            service.unref()
             setState(State.DONE)
         }
     }
@@ -84,10 +80,10 @@ class DiscoveryModel(application: Application) : AbstractModel<DiscoveryModel.St
             PermissionHandler.getInstance().checkAndRequestPermission(
                 Manifest.permission.ACCESS_LOCAL_NETWORK
             ) {
-                launch();
+                launch()
             }
         } else {
-            launch();
+            launch()
         }
     }
 }

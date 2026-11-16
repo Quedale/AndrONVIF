@@ -10,10 +10,6 @@
         android:name="net.quedale.andronvif.player.PlayerFragment"
         android:label="@string/player_fragment_label"
         tools:layout="@layout/player_fragment" >
-        <argument
-            android:name="device"
-            app:argType="net.quedale.andronvif.jni.AndrONVIFDevice"
-            app:nullable="false" />
     </fragment>
 
     <fragment
@@ -44,11 +40,6 @@
         android:name="net.quedale.andronvif.adddevice.AddDeviceFragment"
         android:label="@string/add_device_fragment_label"
         tools:layout="@layout/add_device_fragment" >
-        <argument
-            android:name="device"
-            app:argType="net.quedale.andronvif.jni.AndrONVIFDevice"
-            app:nullable="true"
-            android:defaultValue="@null" />
 
         <action
             android:id="@+id/action_AddDeviceFragment_to_PlayerFragment"

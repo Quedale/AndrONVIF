@@ -7,6 +7,7 @@
 #include <pthread.h>
 #include "clogger.h"
 #include "onvif_device.h"
+#include <unistd.h>
 
 static pthread_key_t current_jni_env;
 static JavaVM *java_vm;
@@ -24,12 +25,14 @@ typedef struct {
 
 typedef struct {
     //Each player instance has its own loop
+    pthread_t retry_thread;
     pthread_t main_thread;
     GMainContext *context;  /* GLib context used to run the main loop */
     GMainLoop *main_loop;   /* GLib main loop */
 
     jobject java_object;    /* Parent java object */
     OnvifDevice * device;   /* ONVIF device to playe */
+    int selected_profile;
 
     //Gstreamer related elements
     GstElement *pipeline;   /* The running pipeline */
@@ -92,6 +95,20 @@ set_ui_message (const gchar * message, AndrONVIFPlayer * player){
     (*env)->DeleteLocalRef (env, jmessage);
 }
 
+static void*
+delayed_restart(void * userdata){
+    AndrONVIFPlayer * player = ANDRONVIF_PLAYER(userdata);
+    AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (player);
+
+    sleep(2);
+
+    if(priv->target_state == GST_STATE_PLAYING)
+        gst_element_set_state (priv->pipeline, GST_STATE_PLAYING);
+
+    g_object_unref(player);
+    return NULL;
+}
+
 /* Retrieve errors from the bus and show them on the UI */
 static void
 error_cb (GstBus * bus, GstMessage * msg, AndrONVIFPlayer * player){
@@ -102,12 +119,25 @@ error_cb (GstBus * bus, GstMessage * msg, AndrONVIFPlayer * player){
 
     gst_message_parse_error (msg, &err, &debug_info);
     message_string = g_strdup_printf ("Error received from element %s: %s", GST_OBJECT_NAME (msg->src), err->message);
+
+    switch(err->code){
+        case GST_RESOURCE_ERROR_READ:
+            C_WARN("Retrying ..."); //TODO Retry wait
+            gst_element_set_state (priv->pipeline, GST_STATE_NULL);
+            g_object_ref(player);
+            pthread_create (&priv->retry_thread, NULL, &delayed_restart, player);
+
+            break;
+        default:
+            priv->target_state = GST_STATE_NULL;
+            gst_element_set_state (priv->pipeline, GST_STATE_NULL);
+            break;
+    }
+
     g_clear_error (&err);
     g_free (debug_info);
     set_ui_message (message_string, player);
     g_free (message_string);
-    priv->target_state = GST_STATE_NULL;
-    gst_element_set_state (priv->pipeline, GST_STATE_NULL);
 }
 
 /* Called when the End Of the Stream is reached. Just move to the beginning of the media and pause. */
@@ -657,7 +687,7 @@ async_bus_call(GstBus *bus, GstMessage *msg, AndrONVIFPlayer* self) {
             latency_cb(self);
             break;
         case GST_MESSAGE_TAG:
-            C_TRACE("new tags");
+//            C_TRACE("new tags");
             break;
         case GST_MESSAGE_STREAM_START:
             set_ui_message ("Playing...", self);
@@ -717,7 +747,7 @@ AndrONVIFPlayer__play_pipeline(AndrONVIFPlayer* self){
 
     /* Build pipeline */
     OnvifMediaService * mservice = OnvifDevice__get_media_service(priv->device);
-    OnvifUri * muri = OnvifMediaService__getStreamUri(mservice,0);//TODO Support profile index
+    OnvifUri * muri = OnvifMediaService__getStreamUri(mservice,priv->selected_profile);//TODO Support profile index
     char*  struri = OnvifUri__get_uri(muri);
 
     if(!struri){
@@ -843,6 +873,10 @@ static gboolean
 AndrONVIFPlayer__idle_play(AndrONVIFPlayer * self){
     //TODO aquire lock in case user change camera too fast
     AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (self);
+    if(priv->pipeline){
+        C_WARN("Pipeline already created");
+        return FALSE;
+    }
     AndrONVIFPlayer__play_pipeline(self);
     return FALSE;
 }
@@ -855,10 +889,6 @@ AndrONVIFPlayer__play(jlong pointer) {
 
     AndrONVIFPlayer * self = ANDRONVIF_PLAYER((void*)pointer);
     AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (self);
-    if(priv->pipeline){
-        C_WARN("Pipeline already created");
-        return;
-    }
 
     if(!priv->context) C_FIXME("Invalid context. Can't play.");
     priv->target_state = GST_STATE_PLAYING;
@@ -866,8 +896,8 @@ AndrONVIFPlayer__play(jlong pointer) {
 }
 
 JNIEXPORT void JNICALL
-AndrONVIFPlayer__set_device(jlong self_pointer, jlong device_pointer){
-    C_DEBUG("AndrONVIFPlayerNew__set_device");
+AndrONVIFPlayer__set_device(jlong self_pointer, jlong device_pointer, jint selected_profile){
+    C_DEBUG("AndrONVIFPlayer__set_device");
     g_return_if_fail(self_pointer != 0);
     g_return_if_fail(ANDRONVIF_IS_PLAYER((void*)self_pointer));
     g_return_if_fail(device_pointer != 0);
@@ -876,13 +906,14 @@ AndrONVIFPlayer__set_device(jlong self_pointer, jlong device_pointer){
     AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (ANDRONVIF_PLAYER((void*)self_pointer));
     OnvifDevice * new_device = ONVIF_DEVICE((void*)device_pointer);
 
-    if(priv->device == new_device) return;
+    if(priv->device != new_device) {
+        //Removing reference if another device is added
+        if(priv->device) g_object_unref(priv->device);
 
-    //Removing reference if another device is added
-    if(priv->device) g_object_unref(priv->device);
-    
-    priv->device = new_device;
-    g_object_ref(priv->device); //Adding reference while using it
+        priv->device = new_device;
+        g_object_ref(priv->device); //Adding reference while using it
+    };
+    priv->selected_profile = selected_profile;
 }
 
 static gboolean
@@ -966,7 +997,6 @@ AndrONVIFPlayer__surfaceChanged (JNIEnv *env, jclass klass, jlong pointer, jobje
             C_DEBUG ("New native window is the same as the previous one");
             if (priv->video_sink) {
                 gst_video_overlay_expose(GST_VIDEO_OVERLAY (priv->video_sink));
-                gst_video_overlay_expose(GST_VIDEO_OVERLAY (priv->video_sink));
             }
             return;
         } else {
@@ -995,6 +1025,26 @@ AndrONVIFPlayer__nativeSurfaceDestroyed (jlong pointer) {
 
     ANativeWindow_release (priv->native_window);
     priv->native_window = NULL;
+}
+
+void gst_print_elements_sink(){
+    GList * factories, *filtered, *tmp;
+
+    C_INFO("* video sinks ***");
+    int found =0;
+    factories = gst_element_factory_list_get_elements (GST_ELEMENT_FACTORY_TYPE_SINK | GST_ELEMENT_FACTORY_TYPE_MEDIA_VIDEO, GST_RANK_MARGINAL);
+    for (tmp = factories; tmp; tmp = tmp->next) {
+        GstElementFactory *fact = (GstElementFactory *) tmp->data;
+        guint rank = gst_plugin_feature_get_rank(GST_PLUGIN_FEATURE_CAST(fact));
+        char * name = gst_plugin_feature_get_name(GST_PLUGIN_FEATURE_CAST(fact));
+        C_INFO("*    %s[%d]",name,rank);
+        found = 1;
+    }
+
+    if(!found){
+        C_INFO("*    None");
+    }
+    gst_plugin_feature_list_free (factories);
 }
 
 void gst_print_elements_by_type(char * type){
@@ -1064,19 +1114,24 @@ AndrONVIFPlayer__nativeClassInit (JNIEnv * env, jclass klass){
 
     gst_debug_set_default_threshold(GST_LEVEL_ERROR);
 
-    gst_plugin_feature_set_rank_by_name("amcviddec-c2goldfishhevcdecoder",GST_RANK_PRIMARY); //This one apparently doesn't support 4k
-    gst_plugin_feature_set_rank_by_name("amcviddec-c2androidhevcdecoder",GST_RANK_PRIMARY+1);
+    // Only uncomment this for better AVD experience. Baremetal is better off commented
+    // gst_plugin_feature_set_rank_by_name("amcviddec-c2goldfishhevcdecoder",GST_RANK_PRIMARY); //This one apparently doesn't support 4k
+    // gst_plugin_feature_set_rank_by_name("amcviddec-c2androidhevcdecoder",GST_RANK_PRIMARY+1);
+    // gst_plugin_feature_set_rank_by_name("amcviddec-omxgooglehevcdecoder",GST_RANK_PRIMARY+1);
 
-    C_INFO("**** Video decoders *******");
+    C_INFO("***** Video decoders *******");
     gst_print_elements_by_type("video/x-h264");
     gst_print_elements_by_type("video/x-h265");
     gst_print_elements_by_type("image/jpeg");
     gst_print_elements_by_type("video/x-av1");
     C_INFO("****************************");
-    C_INFO("**** Audio decoders *******");
+    C_INFO("***** Audio decoders *******");
     gst_print_elements_by_type("audio/x-mulaw");
     gst_print_elements_by_type("audio/x-alaw");
     gst_print_elements_by_type("audio/mpeg");
+    C_INFO("****************************");
+    C_INFO("***** Sinks *******");
+    gst_print_elements_sink();
     C_INFO("****************************");
 
     return JNI_TRUE;
@@ -1098,7 +1153,7 @@ static JNINativeMethod native_methods[] = {
         {"nativeNew", "()J", (void *) AndrONVIFPlayer__nativeNew},
         {"nativePlay", "(J)V", (void *) AndrONVIFPlayer__play},
         {"nativeStop", "(J)V", (void *) AndrONVIFPlayer__nativeStop},
-        {"setDevice", "(JJ)V", (void *) AndrONVIFPlayer__set_device},
+        {"setDevice", "(JJI)V", (void *) AndrONVIFPlayer__set_device},
         {"getGstreamerInfo", "()Ljava/lang/String;", (void *) AndrONVIFPlayer__getGstreamerInfo},
         {"nativeSurfaceDestroyed", "(J)V", (void *) AndrONVIFPlayer__nativeSurfaceDestroyed},
         {"nativeSurfaceChanged", "(JLjava/lang/Object;III)V", (void *) AndrONVIFPlayer__surfaceChanged},

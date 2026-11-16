@@ -68,8 +68,8 @@ public class DeviceListFragment extends Fragment {
     @NonNull
     private DeviceListAdapter<DevicePreview> getDevicePreviewAbstractDeviceListAdapter() {
         DeviceListAdapter.DeviceViewNavigator nav = device -> {
-            net.quedale.andronvif.list.DeviceListFragmentDirections.ActionDeviceListFragmentToPlayerFragment action = net.quedale.andronvif.list.DeviceListFragmentDirections.actionDeviceListFragmentToPlayerFragment(device);
-            NavHostFragment.findNavController(DeviceListFragment.this).navigate(action);
+            model.setSelectedDevice(device);
+            NavHostFragment.findNavController(DeviceListFragment.this).navigate(R.id.action_DeviceListFragment_to_PlayerFragment);
         };
         DeviceListAdapter.DeviceViewSetter<DevicePreview> setter = DevicePreview::setDevice;
         return new DeviceListAdapter<>(R.layout.device_preview,R.id.devicepreview, setter, nav);

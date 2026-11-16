@@ -1,5 +1,8 @@
 package net.quedale.andronvif.jni;
 
+import static android.view.View.INVISIBLE;
+import static android.view.View.VISIBLE;
+
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.widget.TextView;
@@ -25,7 +28,7 @@ public class AndrONVIFPlayer extends JNIObject implements SurfaceHolder.Callback
     @CriticalNative
     private static native void nativeStop(long pointer);    // Stop and destroy pipeline
     @CriticalNative
-    private static  native void setDevice(long self_pointer,long device_pointer);   // Set device used to fetch StreamURI
+    private static  native void setDevice(long self_pointer,long device_pointer, int selected_profile);   // Set device used to fetch StreamURI
 
     @FastNative  //Can't be CriticalNative because of Object parameter
     private static native void nativeSurfaceChanged(long pointer, Object surface, int format, int width, int height);
@@ -77,7 +80,11 @@ public class AndrONVIFPlayer extends JNIObject implements SurfaceHolder.Callback
 
     public void setDevice(AndrONVIFDevice device){
         this.device = device;
-        setDevice(this.pointer_address,device.pointer_address);
+        int index = 0;
+        if(device.getSelectedProfile() != null)
+            index = device.getSelectedProfile().getIndex();
+
+        setDevice(this.pointer_address,device.pointer_address, index);
     }
 
     public AndrONVIFDevice getDevice() {
@@ -87,11 +94,14 @@ public class AndrONVIFPlayer extends JNIObject implements SurfaceHolder.Callback
     public void play(){
         Log.d(AndrONVIFPlayer.class.getSimpleName(), "play");
         nativePlay(this.pointer_address);
+        view.setVisibility(VISIBLE);
     }
 
     public void stop(){
         Log.d(AndrONVIFPlayer.class.getSimpleName(), "stop");
         nativeStop(this.pointer_address);
+        view.setVisibility(INVISIBLE);
+        txtview.setText(null);
     }
 
     @Override

@@ -105,9 +105,8 @@ public class DiscoveryFragment extends Fragment {
     @NonNull
     private DeviceListAdapter<DiscoveryDeviceRow> getDevicePreviewAbstractDeviceListAdapter() {
         DeviceListAdapter.DeviceViewNavigator nav = device -> {
-            DiscoveryFragmentDirections.ActionDeviceDiscoveryFragmentToAddDeviceFragment action = DiscoveryFragmentDirections.actionDeviceDiscoveryFragmentToAddDeviceFragment();
-            action.setDevice(device);
-            NavHostFragment.findNavController(DiscoveryFragment.this).navigate(action);
+            activity_model.setSelectedDevice(device);
+            NavHostFragment.findNavController(DiscoveryFragment.this).navigate(R.id.action_DeviceDiscoveryFragment_to_AddDeviceFragment);
         };
         DeviceListAdapter.DeviceViewSetter<DiscoveryDeviceRow> setter = DiscoveryDeviceRow::setDevice;
         return new DeviceListAdapter<>(R.layout.discovered_device,R.id.devicerow, setter, nav);

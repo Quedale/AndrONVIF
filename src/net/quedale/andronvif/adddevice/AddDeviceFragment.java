@@ -13,13 +13,13 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.graphics.Insets;
-import androidx.core.text.CharSequenceKt;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.fragment.NavHostFragment;
 
+import net.quedale.andronvif.R;
 import net.quedale.andronvif.jni.AndrONVIFDevice;
 import net.quedale.andronvif.databinding.AddDeviceFragmentBinding;
 import net.quedale.andronvif.list.DeviceListViewModel;
@@ -91,11 +91,11 @@ public class AddDeviceFragment extends Fragment {
     }
 
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
-        AndrONVIFDevice device = null;
-        if(getArguments() != null)
-            device = AddDeviceFragmentArgs.fromBundle(getArguments()).getDevice();
-        else
-            Log.e(AddDeviceFragment.class.getSimpleName(),"No argument bundle.");
+        AndrONVIFDevice device = activity_model.getSelectedDevice();
+        if(device == null){
+            Log.d(AddDeviceFragment.class.getSimpleName(),"No device selected.");
+        }
+
         this.populate(device);
 
         model.observeState(getViewLifecycleOwner(), newstate -> {
@@ -109,8 +109,8 @@ public class AddDeviceFragment extends Fragment {
                     switch(model.getFault()){
                         case SOAP_FAULT_NONE:
                             activity_model.addDevice(Objects.requireNonNull(model.getDevice()));
-                            AddDeviceFragmentDirections.ActionAddDeviceFragmentToPlayerFragment action = AddDeviceFragmentDirections.actionAddDeviceFragmentToPlayerFragment(model.getDevice());
-                            NavHostFragment.findNavController(AddDeviceFragment.this).navigate(action);
+                            activity_model.setSelectedDevice(model.getDevice());
+                            NavHostFragment.findNavController(AddDeviceFragment.this).navigate(R.id.action_AddDeviceFragment_to_PlayerFragment);
                             break;
                         case SOAP_FAULT_CONNECTION_ERROR:
                             AddDeviceFragment.this.showErrorAlert("Unable to connect.");

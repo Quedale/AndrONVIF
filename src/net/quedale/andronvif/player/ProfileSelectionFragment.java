@@ -13,25 +13,19 @@ import android.view.WindowManager;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.os.BundleCompat;
 import androidx.fragment.app.DialogFragment;
+import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.ViewModelProvider;
 
 import net.quedale.andronvif.R;
 import net.quedale.andronvif.databinding.ProfileSelectionFragmentBinding;
 import net.quedale.andronvif.jni.AndrONVIFDevice;
+import net.quedale.andronvif.list.DeviceListViewModel;
 
 public class ProfileSelectionFragment extends DialogFragment {
         private ProfileSelectionFragmentBinding binding = null;
         private ProfileSelectionModel model = null;
-
-        public static ProfileSelectionFragment newInstance(AndrONVIFDevice device){
-            ProfileSelectionFragment frag = new ProfileSelectionFragment();
-            Bundle args = new Bundle();
-            args.putSerializable("device", device); // POJO must implement Serializable
-            frag.setArguments(args);
-            return frag;
-        }
+        private DeviceListViewModel activity_model = null;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -41,7 +35,8 @@ public class ProfileSelectionFragment extends DialogFragment {
         ProfileListAdapter<ProfilePreview> adapter = getProfilePreviewAbstractDeviceListAdapter();
         binding.profileRecyclerView.setAdapter(adapter);
 
-        model.observeState(getViewLifecycleOwner(), newstate -> {
+        LifecycleOwner owner = getViewLifecycleOwner();
+        model.observeState(owner, newstate -> {
                 Log.d("ProfileSelectionFragment", "New profile list state !! : " + newstate);
                 switch(newstate){
                     case INITIALIZING:
@@ -55,11 +50,7 @@ public class ProfileSelectionFragment extends DialogFragment {
                 }
             });
 
-        model.observeProfiles(getViewLifecycleOwner(), profiles -> {
-            Log.d("ProfileSelectionFragment","onChanged");
-
-            adapter.setProfiles(profiles);
-        });
+        model.observeProfiles(owner, profiles -> adapter.setProfiles(profiles, model.getDevice()));
 
         binding.profileDialogLayout.setOnClickListener(v -> ProfileSelectionFragment.this.dismiss());
         binding.profileDialogContainer.setOnClickListener(v -> {
@@ -71,7 +62,8 @@ public class ProfileSelectionFragment extends DialogFragment {
     @NonNull
     private ProfileListAdapter<ProfilePreview> getProfilePreviewAbstractDeviceListAdapter() {
         ProfileListAdapter.ProfileViewSetter<ProfilePreview> setter = ProfilePreview::setProfile;
-        return new ProfileListAdapter<>(setter);
+        View.OnClickListener listener = v -> ProfileSelectionFragment.this.dismiss();
+        return new ProfileListAdapter<>(setter,listener);
     }
 
     @NonNull
@@ -81,17 +73,16 @@ public class ProfileSelectionFragment extends DialogFragment {
 
         if(model == null)
             model = new ViewModelProvider(this.requireActivity()).get(ProfileSelectionModel.class);
+        if(activity_model == null)
+            activity_model = new ViewModelProvider(this.requireActivity()).get(DeviceListViewModel.class);
 
-        if(this.getArguments() != null){
-            AndrONVIFDevice device = BundleCompat.getSerializable(this.getArguments(), "device", AndrONVIFDevice.class); // () this.getArguments().getSerializable("device");
-            if(device != null){
-                Log.d(ProfileSelectionFragment.class.getSimpleName(),"Playing : " + device.getUrl());
-
-            } else {
-                Log.e(ProfileSelectionFragment.class.getSimpleName(),"No device set");
-            }
-            model.setDevice(device);
-        }
+        AndrONVIFDevice device = activity_model.getSelectedDevice();
+        if(device != null)
+            Log.d(ProfileSelectionFragment.class.getSimpleName(),"Fetch profile for : " + device.getUrl());
+        else
+            Log.e(ProfileSelectionFragment.class.getSimpleName(),"No device set");
+        
+        model.setDevice(device);
 
         Window window = dialog.getWindow();
         if(window != null)

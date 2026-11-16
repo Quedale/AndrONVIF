@@ -1,6 +1,7 @@
 package net.quedale.andronvif.player
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
@@ -15,7 +16,7 @@ class ProfileSelectionModel(application: Application) : AbstractModel<ProfileSel
     application
 ) {
     private val profiles = MutableLiveData<AndrONVIFMediaProfiles?>()
-    var device: AndrONVIFDevice? = null
+    private var device: AndrONVIFDevice? = null
 
     enum class State {
         INITIALIZING,
@@ -23,6 +24,13 @@ class ProfileSelectionModel(application: Application) : AbstractModel<ProfileSel
         DONE
     }
 
+    fun setDevice(device: AndrONVIFDevice?){
+        this.device = device
+    }
+
+    fun getDevice(): AndrONVIFDevice? {
+        return device
+    }
 
     fun observeProfiles(owner: LifecycleOwner, observer: Observer<AndrONVIFMediaProfiles?>) {
         profiles.observe(owner, observer)
@@ -30,23 +38,18 @@ class ProfileSelectionModel(application: Application) : AbstractModel<ProfileSel
 
     fun start(){
         if(device == null){
+            Log.e("ProfileSelectionModel","No device set")
             return
         }
 
         //Clear previous value to prevent using a release pointer.
         //Alternatively, reference count could be increased and decreased as needed
-        profiles.value = null
+        profiles.postValue(null)
         setState(State.INITIALIZING)
         kotlinx.coroutines.MainScope().launch(Dispatchers.IO) { //Launching with ApplicationScope since this list is the primary model
             coroutineScope {
                 setState(State.LOADING)
-
-                val newprofiles = device!!.fetchProfiles()
-                newprofiles.ref()
-                kotlinx.coroutines.MainScope().launch {
-                    profiles.value = newprofiles
-                    newprofiles.unref()
-                }
+                profiles.postValue(device?.fetchProfiles())
             }
             setState(State.DONE)
         }
