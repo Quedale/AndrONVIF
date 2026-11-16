@@ -97,7 +97,10 @@ public class DiscoveryFragment extends Fragment {
             }
         });
 
-        binding.manualAddBtn.setOnClickListener(view1 -> NavHostFragment.findNavController(DiscoveryFragment.this).navigate(R.id.action_DeviceDiscoveryFragment_to_AddDeviceFragment));
+        binding.manualAddBtn.setOnClickListener(view1 -> {
+            activity_model.setSelectedDevice(null);
+            NavHostFragment.findNavController(DiscoveryFragment.this).navigate(R.id.action_DeviceDiscoveryFragment_to_AddDeviceFragment);
+        });
         binding.back.setOnClickListener(view1 -> NavHostFragment.findNavController(DiscoveryFragment.this).popBackStack());
         return binding.getRoot();
     }

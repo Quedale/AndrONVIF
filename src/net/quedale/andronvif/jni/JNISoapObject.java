@@ -18,9 +18,14 @@ public class JNISoapObject extends JNIObject {
     @CriticalNative
     private static native int getFault(long pointer);
 
-    protected JNISoapObject(long pointer) throws ConnectException, SoapUnauthorizedException, SoapInvalidDeviceException, SoapActionNotSupportedException, SoapUnexpectedException {
+    protected JNISoapObject(long pointer, boolean selfClean) throws ConnectException, SoapUnauthorizedException, SoapInvalidDeviceException, SoapActionNotSupportedException, SoapUnexpectedException {
         super(pointer);
-        handleSoapException(getFault(this.pointer_address));
+        try {
+            handleSoapException(getFault(this.pointer_address));
+        } catch (Exception e){
+            if(selfClean) this.unref();
+            throw e;
+        }
     }
 
     protected static void handleSoapException(int error) throws ConnectException, SoapInvalidDeviceException, SoapUnauthorizedException, SoapActionNotSupportedException, SoapUnexpectedException {
@@ -33,6 +38,33 @@ public class JNISoapObject extends JNIObject {
             case SOAP_FAULT_UNAUTHORIZED -> throw new SoapUnauthorizedException();
             case SOAP_FAULT_ACTION_NOT_SUPPORTED -> throw new SoapActionNotSupportedException();
             case SOAP_FAULT_UNEXPECTED -> throw new SoapUnexpectedException();
+        }
+    }
+
+    public static class SoapInvalidDeviceException extends Exception {
+        public SoapInvalidDeviceException() {
+            super();
+        }
+    }
+
+    public static class SoapUnexpectedException extends Exception {
+        public SoapUnexpectedException() {
+            super();
+        }
+        public SoapUnexpectedException(String msg) {
+            super(msg);
+        }
+    }
+
+    public static class SoapActionNotSupportedException extends Exception {
+        public SoapActionNotSupportedException() {
+            super();
+        }
+    }
+
+    public static class SoapUnauthorizedException extends Exception {
+        public SoapUnauthorizedException() {
+            super();
         }
     }
 }

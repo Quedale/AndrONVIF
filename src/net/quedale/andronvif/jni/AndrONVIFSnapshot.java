@@ -17,7 +17,7 @@ public class AndrONVIFSnapshot extends JNISoapObject implements Serializable {
     private transient Bitmap bitmap;
 
     protected AndrONVIFSnapshot(long pointer) throws ConnectException, SoapInvalidDeviceException, SoapUnauthorizedException, SoapActionNotSupportedException, SoapUnexpectedException {
-        super(pointer);
+        super(pointer,true);
         ByteBuffer buffer = getNativeBuffer(this.pointer_address);
         byte[] imageBytes = new byte[buffer.remaining()];
         buffer.get(imageBytes);

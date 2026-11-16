@@ -66,7 +66,7 @@ public class AndrONVIFDevice extends JNIObject {
         stateflags.observe(owner, observer);
     }
 
-    public void authenticate() throws ConnectException, SoapUnexpectedException, SoapActionNotSupportedException, SoapUnauthorizedException, SoapInvalidDeviceException {
+    public void authenticate() throws ConnectException, JNISoapObject.SoapUnexpectedException, JNISoapObject.SoapActionNotSupportedException, JNISoapObject.SoapUnauthorizedException, JNISoapObject.SoapInvalidDeviceException {
         Integer val = stateflags.getValue();
         if(val != null && (val & AndrONVIFDevice.STATE_AUTHENTICATED_MASK) != 0){
             Log.d("AndrONVIFDevice","Device already authenticated.");
@@ -83,7 +83,7 @@ public class AndrONVIFDevice extends JNIObject {
         return this.snapshot;
     }
 
-    public AndrONVIFMediaProfiles fetchProfiles(){
+    public AndrONVIFMediaProfiles fetchProfiles() throws JNISoapObject.SoapInvalidDeviceException, JNISoapObject.SoapActionNotSupportedException, JNISoapObject.SoapUnauthorizedException, JNISoapObject.SoapUnexpectedException, ConnectException {
         if(profiles != null){
             profiles = null;
         }
@@ -92,7 +92,7 @@ public class AndrONVIFDevice extends JNIObject {
         return profiles;
     }
 
-    public AndrONVIFSnapshot fetchSnapshot() throws SoapInvalidDeviceException, SoapActionNotSupportedException, SoapUnauthorizedException, SoapUnexpectedException, ConnectException {
+    public AndrONVIFSnapshot fetchSnapshot() throws JNISoapObject.SoapInvalidDeviceException, JNISoapObject.SoapActionNotSupportedException, JNISoapObject.SoapUnauthorizedException, JNISoapObject.SoapUnexpectedException, ConnectException {
         //TODO Handling multiple profiles
         if(snapshot != null){
             snapshot.unref();
@@ -140,7 +140,7 @@ public class AndrONVIFDevice extends JNIObject {
         stateflags.setValue(state);
     }
 
-    public void fetchScopes() throws SoapInvalidDeviceException, SoapActionNotSupportedException, SoapUnauthorizedException, SoapUnexpectedException, ConnectException {
+    public void fetchScopes() throws JNISoapObject.SoapInvalidDeviceException, JNISoapObject.SoapActionNotSupportedException, JNISoapObject.SoapUnauthorizedException, JNISoapObject.SoapUnexpectedException, ConnectException {
         AndrONVIFScopes scopes = new AndrONVIFScopes(fetchScopes(this.pointer_address));
         this.name = scopes.extractScope("name");
         this.hardware = scopes.extractScope("hardware");

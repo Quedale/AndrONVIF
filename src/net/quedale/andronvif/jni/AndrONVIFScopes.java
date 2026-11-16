@@ -9,7 +9,7 @@ public class AndrONVIFScopes extends JNISoapObject {
     private static native String extractScope(long pointer, String key);
 
     protected AndrONVIFScopes(long pointer) throws ConnectException, SoapInvalidDeviceException, SoapUnauthorizedException, SoapActionNotSupportedException, SoapUnexpectedException {
-        super(pointer);
+        super(pointer,true);
     }
 
     public String extractScope(String key){

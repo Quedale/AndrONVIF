@@ -9,7 +9,7 @@ import kotlinx.coroutines.launch
 import net.quedale.andronvif.db.AndrONVIFDatabase
 import net.quedale.andronvif.db.DBDevice
 import net.quedale.andronvif.jni.AndrONVIFDevice
-import net.quedale.andronvif.jni.JNIObject
+import net.quedale.andronvif.jni.JNISoapObject
 import net.quedale.andronvif.utils.AbstractModel
 import java.net.ConnectException
 
@@ -70,7 +70,8 @@ class AddDeviceModel(application: Application) : AbstractModel<AddDeviceModel.St
         setState(State.INITIALIZING)
         viewModelScope.launch(Dispatchers.IO) {
             setState(State.AUTHENTICATING)
-            if (device == null) {
+            var tempDevice = device
+            if (tempDevice == null) {
                 var strport: String? = null
                 val urlbuilder: StringBuilder?
                 if (isHTTPS) {
@@ -90,17 +91,17 @@ class AddDeviceModel(application: Application) : AbstractModel<AddDeviceModel.St
                     urlbuilder.append(strport)
                 }
                 urlbuilder.append("/onvif/device_service")
-                device = AndrONVIFDevice(urlbuilder.toString())
+                tempDevice = AndrONVIFDevice(urlbuilder.toString())
             }
 
             Log.d(
                 AddDeviceModel::class.java.getSimpleName(),
-                "Authenticating : " + username + "@" + device!!.url
+                "Authenticating : " + username + "@" + tempDevice.url
             )
-            device!!.setCredentials(username, password)
+            tempDevice.setCredentials(username, password)
             try {
-                device!!.authenticate()
-                setDevice(device)
+                tempDevice.authenticate()
+                setDevice(tempDevice)
                 //Persisting new device
                 val db = Room.databaseBuilder(
                     getApplication(),
@@ -121,14 +122,19 @@ class AddDeviceModel(application: Application) : AbstractModel<AddDeviceModel.St
 
                 setState(State.DONE)
             } catch (_: ConnectException) {
+                if(tempDevice != device) tempDevice.unref()
                 setState(State.ERROR_CONNECTION_FAILED)
-            } catch (_: JNIObject.SoapUnexpectedException) {
+            } catch (_: JNISoapObject.SoapUnexpectedException) {
+                if(tempDevice != device) tempDevice.unref()
                 setState(State.ERROR_UNEXPECTED)
-            } catch (_: JNIObject.SoapActionNotSupportedException) {
+            } catch (_: JNISoapObject.SoapActionNotSupportedException) {
+                if(tempDevice != device) tempDevice.unref()
                 setState(State.ERROR_UNEXPECTED) //TODO Display relevant onvif feature not supported
-            } catch (_: JNIObject.SoapInvalidDeviceException) {
+            } catch (_: JNISoapObject.SoapInvalidDeviceException) {
+                if(tempDevice != device) tempDevice.unref()
                 setState(State.ERROR_UNEXPECTED) //TODO Display relevant not onvif error
-            } catch (_: JNIObject.SoapUnauthorizedException) {
+            } catch (_: JNISoapObject.SoapUnauthorizedException) {
+                if(tempDevice != device) tempDevice.unref()
                 setState(State.ERROR_UNAUTHORIZED)
             }
         }

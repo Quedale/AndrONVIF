@@ -15,7 +15,7 @@ import kotlinx.coroutines.withContext
 import net.quedale.andronvif.db.AndrONVIFDatabase
 import net.quedale.andronvif.db.DBDevice
 import net.quedale.andronvif.jni.AndrONVIFDevice
-import net.quedale.andronvif.jni.JNIObject
+import net.quedale.andronvif.jni.JNISoapObject
 import net.quedale.andronvif.utils.AbstractModel
 import java.net.ConnectException
 
@@ -36,7 +36,7 @@ class DeviceListViewModel(application: Application) : AbstractModel<DeviceListVi
         return selectedDevice
     }
 
-    fun setSelectedDevice(device: AndrONVIFDevice) {
+    fun setSelectedDevice(device: AndrONVIFDevice?) {
         selectedDevice = device
     }
 
@@ -112,15 +112,16 @@ class DeviceListViewModel(application: Application) : AbstractModel<DeviceListVi
                 withContext(Dispatchers.Main) {
                     device.setState(AndrONVIFDevice.STATE_SCOPE_MASK)
                 }
+            //TODO Display error on UI
             } catch (_: ConnectException) {
                 Log.e("DeviceListViewModel", "Failed to fetch scopes. Failed to connect. : " + device.url)
-            } catch (_: JNIObject.SoapUnexpectedException) {
+            } catch (_: JNISoapObject.SoapUnexpectedException) {
                 Log.e("DeviceListViewModel", "Failed to fetch scopes. An unexcepted error occured. : " + device.url)
-            } catch (_: JNIObject.SoapActionNotSupportedException) {
+            } catch (_: JNISoapObject.SoapActionNotSupportedException) {
                 Log.e("DeviceListViewModel", "Failed to fetch scopes. Soap action not supported. : " + device.url)
-            } catch (_: JNIObject.SoapInvalidDeviceException) {
+            } catch (_: JNISoapObject.SoapInvalidDeviceException) {
                 Log.e("DeviceListViewModel", "Failed to fetch scopes. Not a valid ONVIF device. : " + device.url)
-            } catch (_: JNIObject.SoapUnauthorizedException) {
+            } catch (_: JNISoapObject.SoapUnauthorizedException) {
                 Log.e("DeviceListViewModel", "Failed to fetch scopes. Unauthorized. : " + device.url)
             }
         }
@@ -131,15 +132,16 @@ class DeviceListViewModel(application: Application) : AbstractModel<DeviceListVi
                 withContext(Dispatchers.Main) {
                     device.setState(AndrONVIFDevice.STATE_SNAP_MASK)
                 }
+            //TODO Display error on UI
             } catch (_: ConnectException) {
                 Log.e("DeviceListViewModel", "Failed to fetch snapshot. Failed to connect. : " + device.url)
-            } catch (_: JNIObject.SoapUnexpectedException) {
+            } catch (_: JNISoapObject.SoapUnexpectedException) {
                 Log.e("DeviceListViewModel", "Failed to fetch snapshot. An unexcepted error occured. : " + device.url)
-            } catch (_: JNIObject.SoapActionNotSupportedException) {
+            } catch (_: JNISoapObject.SoapActionNotSupportedException) {
                 Log.e("DeviceListViewModel", "Failed to fetch snapshot. Soap action not supported. : " + device.url)
-            } catch (_: JNIObject.SoapInvalidDeviceException) {
+            } catch (_: JNISoapObject.SoapInvalidDeviceException) {
                 Log.e("DeviceListViewModel", "Failed to fetch snapshot. Not a valid ONVIF device. : " + device.url)
-            } catch (_: JNIObject.SoapUnauthorizedException) {
+            } catch (_: JNISoapObject.SoapUnauthorizedException) {
                 Log.e("DeviceListViewModel", "Failed to fetch snapshot. Unauthorized. : " + device.url)
             }
         }
@@ -153,15 +155,16 @@ class DeviceListViewModel(application: Application) : AbstractModel<DeviceListVi
                     device.setState(AndrONVIFDevice.STATE_AUTHENTICATED_MASK)
                 }
                 initDevice(device)
+            //TODO Display error on UI
             } catch (_: ConnectException) {
                 Log.e("DeviceListViewModel", "Failed to authenticate device. Failed to connect. : " + device.url)
-            } catch (_: JNIObject.SoapUnexpectedException) {
+            } catch (_: JNISoapObject.SoapUnexpectedException) {
                 Log.e("DeviceListViewModel", "Failed to authenticate device. An unexcepted error occured. : " + device.url)
-            } catch (_: JNIObject.SoapActionNotSupportedException) {
+            } catch (_: JNISoapObject.SoapActionNotSupportedException) {
                 Log.e("DeviceListViewModel", "Failed to authenticate device. Soap action not supported. : " + device.url)
-            } catch (_: JNIObject.SoapInvalidDeviceException) {
+            } catch (_: JNISoapObject.SoapInvalidDeviceException) {
                 Log.e("DeviceListViewModel", "Failed to authenticate device. Not a valid ONVIF device. : " + device.url)
-            } catch (_: JNIObject.SoapUnauthorizedException) {
+            } catch (_: JNISoapObject.SoapUnauthorizedException) {
                 Log.e("DeviceListViewModel", "Failed to authenticate device. Unauthorized. : " + device.url)
             }
         }

@@ -10,7 +10,9 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import net.quedale.andronvif.jni.AndrONVIFDevice
 import net.quedale.andronvif.jni.AndrONVIFMediaProfiles
+import net.quedale.andronvif.jni.JNISoapObject
 import net.quedale.andronvif.utils.AbstractModel
+import java.net.ConnectException
 
 class ProfileSelectionModel(application: Application) : AbstractModel<ProfileSelectionModel.State>(
     application
@@ -49,7 +51,21 @@ class ProfileSelectionModel(application: Application) : AbstractModel<ProfileSel
         kotlinx.coroutines.MainScope().launch(Dispatchers.IO) { //Launching with ApplicationScope since this list is the primary model
             coroutineScope {
                 setState(State.LOADING)
-                profiles.postValue(device?.fetchProfiles())
+                try{
+                    profiles.postValue(device?.fetchProfiles())
+
+                //TODO Display error message on UI
+                } catch (_: ConnectException) {
+                    Log.e("ProfileSelectionModel", "Failed to fetch media profiles from device. Failed to connect. : " + device!!.url)
+                } catch (_: JNISoapObject.SoapUnexpectedException) {
+                    Log.e("ProfileSelectionModel", "Failed to fetch media profiles from device. An unexcepted error occured. : " + device!!.url)
+                } catch (_: JNISoapObject.SoapActionNotSupportedException) {
+                    Log.e("ProfileSelectionModel", "Failed to fetch media profiles from device. Soap action not supported. : " + device!!.url)
+                } catch (_: JNISoapObject.SoapInvalidDeviceException) {
+                    Log.e("ProfileSelectionModel", "Failed to fetch media profiles from device. Not a valid ONVIF device. : " + device!!.url)
+                } catch (_: JNISoapObject.SoapUnauthorizedException) {
+                    Log.e("ProfileSelectionModel", "Failed to fetch media profiles from device. Unauthorized. : " + device!!.url)
+                }
             }
             setState(State.DONE)
         }
