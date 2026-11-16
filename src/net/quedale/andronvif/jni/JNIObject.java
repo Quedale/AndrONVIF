@@ -52,4 +52,32 @@ public abstract class JNIObject {
     }
 
     protected void destroyed(){}
+
+    public static class SoapInvalidDeviceException extends Exception {
+        public SoapInvalidDeviceException() {
+            super();
+        }
+    }
+
+    public static class SoapUnexpectedException extends Exception {
+        public SoapUnexpectedException() {
+            super();
+        }
+        public SoapUnexpectedException(String msg) {
+            super(msg);
+        }
+    }
+
+    public static class SoapActionNotSupportedException extends Exception {
+        public SoapActionNotSupportedException() {
+            super();
+        }
+    }
+
+    public static class SoapUnauthorizedException extends Exception {
+        public SoapUnauthorizedException() {
+            super();
+        }
+    }
+
 }

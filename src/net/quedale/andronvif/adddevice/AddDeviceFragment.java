@@ -104,26 +104,20 @@ public class AddDeviceFragment extends Fragment {
                 case AUTHENTICATING:
                     binding.loadingOverlay.setVisibility(VISIBLE);
                     break;
+                case ERROR_CONNECTION_FAILED:
+                    AddDeviceFragment.this.showErrorAlert("Unable to connect.");
+                    break;
+                case ERROR_UNAUTHORIZED:
+                    AddDeviceFragment.this.showErrorAlert("Unauthorized.");
+                    break;
+                case ERROR_UNEXPECTED:
+                    AddDeviceFragment.this.showErrorAlert("An unexpected error occured.");
+                    break;
                 case DONE:
                     binding.loadingOverlay.setVisibility(INVISIBLE);
-                    switch(model.getFault()){
-                        case SOAP_FAULT_NONE:
-                            activity_model.addDevice(Objects.requireNonNull(model.getDevice()));
-                            activity_model.setSelectedDevice(model.getDevice());
-                            NavHostFragment.findNavController(AddDeviceFragment.this).navigate(R.id.action_AddDeviceFragment_to_PlayerFragment);
-                            break;
-                        case SOAP_FAULT_CONNECTION_ERROR:
-                            AddDeviceFragment.this.showErrorAlert("Unable to connect.");
-                            break;
-                        case SOAP_FAULT_UNAUTHORIZED:
-                            AddDeviceFragment.this.showErrorAlert("Unauthorized.");
-                            break;
-                        case SOAP_FAULT_NOT_VALID:
-                        case SOAP_FAULT_ACTION_NOT_SUPPORTED:
-                        case SOAP_FAULT_UNEXPECTED:
-                            AddDeviceFragment.this.showErrorAlert("An unexpected error occured.");
-                            break;
-                    }
+                    activity_model.addDevice(Objects.requireNonNull(model.getDevice()));
+                    activity_model.setSelectedDevice(model.getDevice());
+                    NavHostFragment.findNavController(AddDeviceFragment.this).navigate(R.id.action_AddDeviceFragment_to_PlayerFragment);
                     break;
             }
         });

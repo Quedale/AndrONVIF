@@ -1115,9 +1115,10 @@ AndrONVIFPlayer__nativeClassInit (JNIEnv * env, jclass klass){
     gst_debug_set_default_threshold(GST_LEVEL_ERROR);
 
     // Only uncomment this for better AVD experience. Baremetal is better off commented
-    // gst_plugin_feature_set_rank_by_name("amcviddec-c2goldfishhevcdecoder",GST_RANK_PRIMARY); //This one apparently doesn't support 4k
-    // gst_plugin_feature_set_rank_by_name("amcviddec-c2androidhevcdecoder",GST_RANK_PRIMARY+1);
-    // gst_plugin_feature_set_rank_by_name("amcviddec-omxgooglehevcdecoder",GST_RANK_PRIMARY+1);
+//    gst_plugin_feature_set_rank_by_name("amcviddec-c2goldfishhevcdecoder",GST_RANK_PRIMARY); //This one apparently doesn't support 4k
+//    gst_plugin_feature_set_rank_by_name("amcviddec-c2androidhevcdecoder",GST_RANK_PRIMARY+2); // about 2.5 sec delay on Pixel10ProXL at 4K
+//    gst_plugin_feature_set_rank_by_name("amcviddec-c2googlehevcdecoder",GST_RANK_PRIMARY+2); // Fails on Pixel10ProXL at 4K
+     gst_plugin_feature_set_rank_by_name("amcviddec-omxgooglehevcdecoder",GST_RANK_PRIMARY+2);  // about 2 sec delay on Pixel10ProXL at 4K
 
     C_INFO("***** Video decoders *******");
     gst_print_elements_by_type("video/x-h264");

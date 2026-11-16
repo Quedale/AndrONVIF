@@ -9,27 +9,26 @@ import kotlinx.coroutines.launch
 import net.quedale.andronvif.db.AndrONVIFDatabase
 import net.quedale.andronvif.db.DBDevice
 import net.quedale.andronvif.jni.AndrONVIFDevice
-import net.quedale.andronvif.jni.JNISoapObject.SoapFault
+import net.quedale.andronvif.jni.JNIObject
 import net.quedale.andronvif.utils.AbstractModel
+import java.net.ConnectException
 
 class AddDeviceModel(application: Application) : AbstractModel<AddDeviceModel.State>(application) {
     enum class State {
         INITIALIZING,
         AUTHENTICATING,
+        ERROR_CONNECTION_FAILED,
+        ERROR_UNAUTHORIZED,
+        ERROR_UNEXPECTED,
         DONE
     }
 
-    private var fault: SoapFault = SoapFault.SOAP_FAULT_NONE
     private var device: AndrONVIFDevice? = null
     private var hostname: String? = null
     private var port = 0
     private var isHTTPS = false
     private var username: String? = null
     private var password: String? = null
-
-    fun getFault(): SoapFault {
-        return fault
-    }
 
     fun getDevice(): AndrONVIFDevice? {
         return device
@@ -99,10 +98,8 @@ class AddDeviceModel(application: Application) : AbstractModel<AddDeviceModel.St
                 "Authenticating : " + username + "@" + device!!.url
             )
             device!!.setCredentials(username, password)
-            fault = device!!.authenticate()
-
-            //Set device to model only if valid
-            if (fault == SoapFault.SOAP_FAULT_NONE) {
+            try {
+                device!!.authenticate()
                 setDevice(device)
                 //Persisting new device
                 val db = Room.databaseBuilder(
@@ -121,9 +118,19 @@ class AddDeviceModel(application: Application) : AbstractModel<AddDeviceModel.St
                     )
                 )
                 db.close()
-            }
 
-            setState(State.DONE)
+                setState(State.DONE)
+            } catch (_: ConnectException) {
+                setState(State.ERROR_CONNECTION_FAILED)
+            } catch (_: JNIObject.SoapUnexpectedException) {
+                setState(State.ERROR_UNEXPECTED)
+            } catch (_: JNIObject.SoapActionNotSupportedException) {
+                setState(State.ERROR_UNEXPECTED) //TODO Display relevant onvif feature not supported
+            } catch (_: JNIObject.SoapInvalidDeviceException) {
+                setState(State.ERROR_UNEXPECTED) //TODO Display relevant not onvif error
+            } catch (_: JNIObject.SoapUnauthorizedException) {
+                setState(State.ERROR_UNAUTHORIZED)
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 package net.quedale.andronvif.utils;
 
+import android.annotation.SuppressLint;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -49,6 +50,7 @@ public class DeviceListAdapter<T extends View> extends RecyclerView.Adapter<Devi
         return devices.size();
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     public void setDevices(List<AndrONVIFDevice> devices){
         if(devices == null){
             if(this.devices != null){

@@ -1,12 +1,14 @@
 package net.quedale.andronvif.jni;
 
+import java.net.ConnectException;
+
 import dalvik.annotation.optimization.FastNative;
 
 public class AndrONVIFScopes extends JNISoapObject {
     @FastNative
     private static native String extractScope(long pointer, String key);
 
-    protected AndrONVIFScopes(long pointer) {
+    protected AndrONVIFScopes(long pointer) throws ConnectException, SoapInvalidDeviceException, SoapUnauthorizedException, SoapActionNotSupportedException, SoapUnexpectedException {
         super(pointer);
     }
 

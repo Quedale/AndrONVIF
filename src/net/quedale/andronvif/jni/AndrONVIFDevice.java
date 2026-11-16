@@ -9,6 +9,8 @@ import androidx.lifecycle.Observer;
 
 import org.jspecify.annotations.NonNull;
 
+import java.net.ConnectException;
+
 import dalvik.annotation.optimization.CriticalNative;
 import dalvik.annotation.optimization.FastNative;
 
@@ -64,13 +66,13 @@ public class AndrONVIFDevice extends JNIObject {
         stateflags.observe(owner, observer);
     }
 
-    public JNISoapObject.SoapFault authenticate(){
+    public void authenticate() throws ConnectException, SoapUnexpectedException, SoapActionNotSupportedException, SoapUnauthorizedException, SoapInvalidDeviceException {
         Integer val = stateflags.getValue();
         if(val != null && (val & AndrONVIFDevice.STATE_AUTHENTICATED_MASK) != 0){
             Log.d("AndrONVIFDevice","Device already authenticated.");
-            return JNISoapObject.SoapFault.SOAP_FAULT_NONE;
+            return;
         }
-        return JNISoapObject.SoapFault.values()[AndrONVIFDevice.authenticate(this.pointer_address)];
+        JNISoapObject.handleSoapException(AndrONVIFDevice.authenticate(this.pointer_address));
     }
 
     public void setCredentials(String username, String password){
@@ -90,7 +92,7 @@ public class AndrONVIFDevice extends JNIObject {
         return profiles;
     }
 
-    public AndrONVIFSnapshot fetchSnapshot(){
+    public AndrONVIFSnapshot fetchSnapshot() throws SoapInvalidDeviceException, SoapActionNotSupportedException, SoapUnauthorizedException, SoapUnexpectedException, ConnectException {
         //TODO Handling multiple profiles
         if(snapshot != null){
             snapshot.unref();
@@ -138,15 +140,11 @@ public class AndrONVIFDevice extends JNIObject {
         stateflags.setValue(state);
     }
 
-    public JNISoapObject.SoapFault fetchScopes(){
+    public void fetchScopes() throws SoapInvalidDeviceException, SoapActionNotSupportedException, SoapUnauthorizedException, SoapUnexpectedException, ConnectException {
         AndrONVIFScopes scopes = new AndrONVIFScopes(fetchScopes(this.pointer_address));
-        JNISoapObject.SoapFault fault = scopes.getFault();
-        if(scopes.getFault() == JNISoapObject.SoapFault.SOAP_FAULT_NONE){
-            this.name = scopes.extractScope("name");
-            this.hardware = scopes.extractScope("hardware");
-            this.location = scopes.extractScope("location");
-        }
-        return fault;
+        this.name = scopes.extractScope("name");
+        this.hardware = scopes.extractScope("hardware");
+        this.location = scopes.extractScope("location");
     }
 
     @Override
