@@ -44,7 +44,7 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:contentDescription="@string/onvif_media_fixed_profile_indicator"
-            android:src="@drawable/locked_icon"
+            android:src="@android:drawable/ic_lock_lock"
             android:padding="@dimen/grid_margin"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintEnd_toEndOf="parent"

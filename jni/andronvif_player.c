@@ -276,31 +276,30 @@ on_decoder_pad_added_cb (GstElement *element, GstPad *new_pad, GstElement * conv
 
 static GstElement *
 AndrONVIFPlayer__create_video_pad(){
-    GstElement *vdecoder, *videoconvert, *video_bin, *sink;
+    GstElement *vdecoder, *video_bin, *sink;
     GstPad *pad, *ghostpad;
 
     video_bin = gst_bin_new("video_bin");
     //Using decodebin because decodebin3 pad caps are null on pad-added signal
-    vdecoder = gst_element_factory_make ("decodebin", "video_decodebin");
+    vdecoder = gst_element_factory_make ("decodebin3", "video_decodebin3");
     if (!vdecoder) {
-        C_WARN("decodebin not available, trying decodebin3");
-        vdecoder = gst_element_factory_make ("decodebin3", "video_decodebin3");
+        C_WARN("decodebin3 not available, trying decodebin");
+        vdecoder = gst_element_factory_make ("decodebin", "video_decodebin");
     }
-    //TODO Fallback into manual decoding bin if vdecoder failed
-    videoconvert = gst_element_factory_make ("videoconvert", "videoconverter");
 
     sink = gst_element_factory_make ("autovideosink", NULL);
 
     // TODO Add Setting page allowing to configure Gstreamer
     // gst_base_sink_set_qos_enabled(GST_BASE_SINK_CAST(sink),FALSE);
     gst_base_sink_set_sync(GST_BASE_SINK_CAST(sink),FALSE);
-    // gst_base_sink_set_async_enabled (GST_BASE_SINK_CAST(sink),TRUE);
+    gst_base_sink_set_async_enabled (GST_BASE_SINK_CAST(sink),FALSE);
+    g_object_set (G_OBJECT(sink), "sync", FALSE, NULL);
     // gst_base_sink_set_max_lateness(GST_BASE_SINK_CAST(sink),10000);
     // gst_base_sink_set_throttle_time(GST_BASE_SINK_CAST(sink),40000000);
 
+
     if (!video_bin ||
         !vdecoder ||
-        !videoconvert ||
         !sink) {
         C_ERROR ("One of the video elements wasn't created... Exiting");
         return NULL;
@@ -309,17 +308,11 @@ AndrONVIFPlayer__create_video_pad(){
     // Add Elements to the Bin
     gst_bin_add_many (GST_BIN (video_bin),
                       vdecoder,
-                      videoconvert,
                       sink, NULL);
 
-    // Link confirmation
-    if (!gst_element_link_many (videoconvert, sink, NULL)){
-        C_WARN ("Failed to link video converter to sink");
-        return NULL;
-    }
 
     // Dynamic Pad Creation
-    if(! g_signal_connect (vdecoder, "pad-added", G_CALLBACK (on_decoder_pad_added_cb),videoconvert)){
+    if(! g_signal_connect (vdecoder, "pad-added", G_CALLBACK (on_decoder_pad_added_cb),sink)){
         C_ERROR ("Unabled to connect \"pad-added\" signal to video decoder.");
         return NULL;
     }
@@ -340,43 +333,40 @@ AndrONVIFPlayer__create_video_pad(){
 static GstElement *
 AndrONVIFPlayer__create_audio_pad(){
     GstPad *pad, *ghostpad;
-    GstElement *decoder, *convert, *level, *sink, *audio_bin;
+    GstElement *decoder, *level, *sink, *audio_bin;
 
     audio_bin = gst_bin_new("audiobin");
     //Using decodebin because decodebin3 pad caps are null on pad-added signal
-    decoder = gst_element_factory_make ("decodebin", "audio_decodebin");
+    decoder = gst_element_factory_make ("decodebin3", "audio_decodebin3");
     if (!decoder) {
-        C_WARN("decodebin not available, trying decodebin3");
-        decoder = gst_element_factory_make ("decodebin3", "audio_decodebin3");
+        C_WARN("decodebin3 not available, trying decodebin");
+        decoder = gst_element_factory_make ("decodebin", "audio_decodebin");
     }
-    convert = gst_element_factory_make ("audioconvert", "audioconverter");
     level = gst_element_factory_make("level",NULL);
     sink = gst_element_factory_make ("autoaudiosink", NULL);
     g_object_set (G_OBJECT (sink), "sync", FALSE, NULL);
     if (!audio_bin ||
         !decoder ||
-        !convert ||
         !level ||
         !sink) {
-        C_ERROR ("One of the audio elements wasn't created. audiobin[%d] decoder[%d] convert[%d] level[%d] sink[%d]",!audio_bin, !decoder, !convert, !level, !sink);
+        C_ERROR ("One of the audio elements wasn't created. audiobin[%d] decoder[%d] level[%d] sink[%d]",!audio_bin, !decoder, !level, !sink);
         return NULL;
     }
 
     // Add Elements to the Bin
     gst_bin_add_many (GST_BIN (audio_bin),
                       decoder,
-                      convert,
                       level,
                       sink, NULL);
 
     // Link confirmation
-    if (!gst_element_link_many (convert,level, sink, NULL)){
+    if (!gst_element_link_many (level, sink, NULL)){
         C_WARN ("Failed to link audio concverter, level and sink.");
         return NULL;
     }
 
     // Dynamic Pad Creation
-    if(! g_signal_connect (decoder, "pad-added", G_CALLBACK (on_decoder_pad_added_cb),convert)){
+    if(! g_signal_connect (decoder, "pad-added", G_CALLBACK (on_decoder_pad_added_cb),level)){
         C_ERROR ("Unabled to connect \"pad-added\" signal to audio decoder.");
         return NULL;
     }
@@ -476,7 +466,8 @@ AndrONVIFPlayer__create_pipeline(AndrONVIFPlayer* self, char * url, char * user,
 
     g_object_set (G_OBJECT (rtspsrc), "protocols", GST_RTSP_LOWER_TRANS_TCP, NULL); //TODO Allow changing this via settings
     g_object_set (G_OBJECT(rtspsrc), "is-live", TRUE, NULL);
-    // g_object_set (G_OBJECT(rtspsrc), "latency", 20000, NULL);
+    g_object_set (G_OBJECT(rtspsrc), "latency", 0, NULL);
+    g_object_set (G_OBJECT(rtspsrc), "drop-on-latency", TRUE, NULL);
     // g_object_set (G_OBJECT(rtspsrc), "onvif-mode", TRUE, NULL); // causes "gst_event_new_segment: assertion 'segment->rate != 0.0' failed" on android
 }
 
@@ -1115,10 +1106,15 @@ AndrONVIFPlayer__nativeClassInit (JNIEnv * env, jclass klass){
     gst_debug_set_default_threshold(GST_LEVEL_ERROR);
 
     // Only uncomment this for better AVD experience. Baremetal is better off commented
-//    gst_plugin_feature_set_rank_by_name("amcviddec-c2goldfishhevcdecoder",GST_RANK_PRIMARY); //This one apparently doesn't support 4k
-//    gst_plugin_feature_set_rank_by_name("amcviddec-c2androidhevcdecoder",GST_RANK_PRIMARY+2); // about 2.5 sec delay on Pixel10ProXL at 4K
-//    gst_plugin_feature_set_rank_by_name("amcviddec-c2googlehevcdecoder",GST_RANK_PRIMARY+2); // Fails on Pixel10ProXL at 4K
-     gst_plugin_feature_set_rank_by_name("amcviddec-omxgooglehevcdecoder",GST_RANK_PRIMARY+2);  // about 2 sec delay on Pixel10ProXL at 4K
+//    gst_plugin_feature_set_rank_by_name("amcviddec-c2googleavcdecoder",GST_RANK_PRIMARY+2);
+//    gst_plugin_feature_set_rank_by_name("amcviddec-c2androidavcdecoder",GST_RANK_PRIMARY+2);
+//    gst_plugin_feature_set_rank_by_name("amcviddec-omxgoogleh264decoder",GST_RANK_PRIMARY+2);
+//    gst_plugin_feature_set_rank_by_name("openh264dec",GST_RANK_PRIMARY+2);
+
+//    gst_plugin_feature_set_rank_by_name("amcviddec-c2goldfishhevcdecoder",GST_RANK_PRIMARY);
+//    gst_plugin_feature_set_rank_by_name("amcviddec-c2androidhevcdecoder",GST_RANK_PRIMARY+2);
+//    gst_plugin_feature_set_rank_by_name("amcviddec-c2googlehevcdecoder",GST_RANK_PRIMARY+2);
+//    gst_plugin_feature_set_rank_by_name("amcviddec-omxgooglehevcdecoder",GST_RANK_PRIMARY+2);
 
     C_INFO("***** Video decoders *******");
     gst_print_elements_by_type("video/x-h264");

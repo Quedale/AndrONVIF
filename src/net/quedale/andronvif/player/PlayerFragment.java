@@ -1,8 +1,6 @@
 package net.quedale.andronvif.player;
 
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.SurfaceHolder;
@@ -46,6 +44,9 @@ public class PlayerFragment  extends Fragment {
         windowInsetsController.hide(WindowInsetsCompat.Type.systemBars());
 
         binding.profileBtn.setOnClickListener(v -> new ProfileSelectionFragment().showNow(PlayerFragment.this.requireActivity().getSupportFragmentManager(), "tag"));
+
+        //TODO Disable this if player stop/fails
+        binding.getRoot().setKeepScreenOn(true);
         return binding.getRoot();
     }
 
@@ -67,10 +68,9 @@ public class PlayerFragment  extends Fragment {
 
             device.observeSelectedProfile(getViewLifecycleOwner(), profile -> {
                 Log.d("PlayerFragment","MediaProfile changed : " + profile.getIndex() + " : " + profile.getName());
-                player.setDevice(device);
                 player.stop();
-                Handler mainHandler = new Handler(Looper.getMainLooper());
-                mainHandler.post(() -> player.play());
+                player.setDevice(device);
+                player.play();
             });
         } else {
             Log.e(PlayerFragment.class.getSimpleName(), "No device selected.");
