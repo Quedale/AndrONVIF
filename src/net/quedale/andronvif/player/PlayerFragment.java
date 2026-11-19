@@ -51,7 +51,7 @@ public class PlayerFragment  extends Fragment {
         windowInsetsController.hide(WindowInsetsCompat.Type.systemBars());
         originalTheme = windowInsetsController.isAppearanceLightStatusBars();
         windowInsetsController.setAppearanceLightStatusBars(false);
-        ViewCompat.setOnApplyWindowInsetsListener(window.getDecorView(), new OnApplyWindowInsetsListener() {
+        ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(), new OnApplyWindowInsetsListener() {
             @Override
             public @org.jspecify.annotations.NonNull WindowInsetsCompat onApplyWindowInsets(@org.jspecify.annotations.NonNull View v, @org.jspecify.annotations.NonNull WindowInsetsCompat insets) {
                 Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
