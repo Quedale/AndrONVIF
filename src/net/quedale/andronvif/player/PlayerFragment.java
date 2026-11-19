@@ -9,6 +9,9 @@ import android.view.ViewGroup;
 import android.view.Window;
 
 import androidx.annotation.NonNull;
+import androidx.core.graphics.Insets;
+import androidx.core.view.OnApplyWindowInsetsListener;
+import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
@@ -27,6 +30,10 @@ public class PlayerFragment  extends Fragment {
     private AndrONVIFPlayer player;
     private DeviceListViewModel activity_model;
 
+    private boolean nav_bar_visible = false;
+    private boolean originalTheme = false;
+
+
     @Override
     public View onCreateView(
             @NonNull LayoutInflater inflater, ViewGroup container,
@@ -42,9 +49,36 @@ public class PlayerFragment  extends Fragment {
                 WindowCompat.getInsetsController(window, window.getDecorView());
         windowInsetsController.setSystemBarsBehavior(WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
         windowInsetsController.hide(WindowInsetsCompat.Type.systemBars());
+        originalTheme = windowInsetsController.isAppearanceLightStatusBars();
+        windowInsetsController.setAppearanceLightStatusBars(false);
+        ViewCompat.setOnApplyWindowInsetsListener(window.getDecorView(), new OnApplyWindowInsetsListener() {
+            @Override
+            public @org.jspecify.annotations.NonNull WindowInsetsCompat onApplyWindowInsets(@org.jspecify.annotations.NonNull View v, @org.jspecify.annotations.NonNull WindowInsetsCompat insets) {
+                Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+                nav_bar_visible = insets.isVisible(WindowInsetsCompat.Type.navigationBars());
+                binding.deviceOnvifUrl.setPadding(0, 0, 0, systemBars.bottom);
+                return WindowInsetsCompat.CONSUMED;
+            }
+        });
 
         binding.profileBtn.setOnClickListener(v -> new ProfileSelectionFragment().showNow(PlayerFragment.this.requireActivity().getSupportFragmentManager(), "tag"));
-
+        binding.muteBtn.setOnClickListener(v -> {
+            boolean muted = player.toggleMute();
+            if(muted){
+                binding.muteBtn.setImageResource(android.R.drawable.ic_lock_silent_mode);
+            } else {
+                binding.muteBtn.setImageResource(android.R.drawable.ic_lock_silent_mode_off);
+            }
+        });
+        binding.surfaceVideo.setOnClickListener(v -> {
+            View decorView = requireActivity().getWindow().getDecorView();
+            WindowInsetsControllerCompat controller = new WindowInsetsControllerCompat(requireActivity().getWindow(), decorView);
+            if(nav_bar_visible) {
+                controller.hide(WindowInsetsCompat.Type.systemBars());
+            } else {
+                controller.show(WindowInsetsCompat.Type.systemBars());
+            }
+        });
         //TODO Disable this if player stop/fails
         binding.getRoot().setKeepScreenOn(true);
         return binding.getRoot();
@@ -100,6 +134,7 @@ public class PlayerFragment  extends Fragment {
                 WindowCompat.getInsetsController(window, window.getDecorView());
         windowInsetsController.setSystemBarsBehavior(WindowInsetsControllerCompat.BEHAVIOR_DEFAULT);
                 windowInsetsController.show(WindowInsetsCompat.Type.systemBars());
+        windowInsetsController.setAppearanceLightStatusBars(originalTheme);
         player.unref();
         super.onDestroyView();
     }

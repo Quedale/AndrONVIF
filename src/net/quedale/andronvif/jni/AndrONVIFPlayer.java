@@ -26,6 +26,8 @@ public class AndrONVIFPlayer extends JNIObject implements SurfaceHolder.Callback
     @CriticalNative
     private static native void nativePlay(long pointer);    // Fetch StreamURI and construct/play pipeline
     @CriticalNative
+    private static native boolean nativeToggleMute(long pointer);    // Fetch StreamURI and construct/play pipeline
+    @CriticalNative
     private static native void nativeStop(long pointer);    // Stop and destroy pipeline
     @CriticalNative
     private static  native void setDevice(long self_pointer,long device_pointer, int selected_profile);   // Set device used to fetch StreamURI
@@ -89,6 +91,11 @@ public class AndrONVIFPlayer extends JNIObject implements SurfaceHolder.Callback
 
     public AndrONVIFDevice getDevice() {
         return this.device;
+    }
+
+    public boolean toggleMute(){
+        Log.d(AndrONVIFPlayer.class.getSimpleName(), "toggleMute");
+        return nativeToggleMute(this.pointer_address);
     }
 
     public void play(){

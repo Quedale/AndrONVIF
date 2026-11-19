@@ -4,6 +4,7 @@
 #include <gst/gst.h>
 #include <gst/video/video.h>
 #include "gst/rtsp/gstrtsptransport.h"
+#include <gst/audio/streamvolume.h>
 #include <pthread.h>
 #include "clogger.h"
 #include "onvif_device.h"
@@ -333,7 +334,7 @@ AndrONVIFPlayer__create_video_pad(){
 static GstElement *
 AndrONVIFPlayer__create_audio_pad(){
     GstPad *pad, *ghostpad;
-    GstElement *decoder, *level, *sink, *audio_bin;
+    GstElement *decoder, *volume, *level, *sink, *audio_bin;
 
     audio_bin = gst_bin_new("audiobin");
     //Using decodebin because decodebin3 pad caps are null on pad-added signal
@@ -342,11 +343,13 @@ AndrONVIFPlayer__create_audio_pad(){
         C_WARN("decodebin3 not available, trying decodebin");
         decoder = gst_element_factory_make ("decodebin", "audio_decodebin");
     }
-    level = gst_element_factory_make("level",NULL);
+    volume= gst_element_factory_make("volume","volume");
+    level = gst_element_factory_make("level","level");
     sink = gst_element_factory_make ("autoaudiosink", NULL);
     g_object_set (G_OBJECT (sink), "sync", FALSE, NULL);
     if (!audio_bin ||
         !decoder ||
+        !volume ||
         !level ||
         !sink) {
         C_ERROR ("One of the audio elements wasn't created. audiobin[%d] decoder[%d] level[%d] sink[%d]",!audio_bin, !decoder, !level, !sink);
@@ -357,10 +360,11 @@ AndrONVIFPlayer__create_audio_pad(){
     gst_bin_add_many (GST_BIN (audio_bin),
                       decoder,
                       level,
+                      volume,
                       sink, NULL);
 
     // Link confirmation
-    if (!gst_element_link_many (level, sink, NULL)){
+    if (!gst_element_link_many (level, volume, sink, NULL)){
         C_WARN ("Failed to link audio concverter, level and sink.");
         return NULL;
     }
@@ -872,6 +876,24 @@ AndrONVIFPlayer__idle_play(AndrONVIFPlayer * self){
     return FALSE;
 }
 
+static JNIEXPORT jboolean JNICALL
+AndrONVIFPlayer__toggleMute(jlong pointer) {
+    g_return_val_if_fail(pointer != 0, FALSE);
+    g_return_val_if_fail(ANDRONVIF_IS_PLAYER((void*)pointer), FALSE);
+
+    AndrONVIFPlayer * self = ANDRONVIF_PLAYER((void*)pointer);
+    AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (self);
+
+    GstElement *volume = gst_bin_get_by_name(GST_BIN(priv->pipeline), "volume");
+    gboolean muted = gst_stream_volume_get_mute(GST_STREAM_VOLUME(volume));
+    if(muted){
+        gst_stream_volume_set_mute(GST_STREAM_VOLUME(volume),false);
+        return false;
+    } else {
+        gst_stream_volume_set_mute(GST_STREAM_VOLUME(volume),true);
+        return true;
+    }
+}
 
 static JNIEXPORT void JNICALL
 AndrONVIFPlayer__play(jlong pointer) {
@@ -1154,7 +1176,8 @@ static JNINativeMethod native_methods[] = {
         {"getGstreamerInfo", "()Ljava/lang/String;", (void *) AndrONVIFPlayer__getGstreamerInfo},
         {"nativeSurfaceDestroyed", "(J)V", (void *) AndrONVIFPlayer__nativeSurfaceDestroyed},
         {"nativeSurfaceChanged", "(JLjava/lang/Object;III)V", (void *) AndrONVIFPlayer__surfaceChanged},
-        {"nativeClassInit", "()Z", (void *) AndrONVIFPlayer__nativeClassInit}
+        {"nativeClassInit", "()Z", (void *) AndrONVIFPlayer__nativeClassInit},
+        {"nativeToggleMute", "(J)Z", AndrONVIFPlayer__toggleMute}
 };
 
 /* Library initializer */
