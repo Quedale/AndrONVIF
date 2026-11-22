@@ -43,7 +43,7 @@ public class DeviceListFragment extends Fragment {
                     DeviceListFragment.this.binding.dbfetchProgress.setVisibility(View.VISIBLE);
                     break;
                 case DONE:
-                    DeviceListFragment.this.binding.dbfetchProgress.setVisibility(View.INVISIBLE);
+                    DeviceListFragment.this.binding.dbfetchProgress.setVisibility(View.GONE);
                     break;
             }
         });

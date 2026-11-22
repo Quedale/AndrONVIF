@@ -4,72 +4,70 @@
     android:id="@+id/devicepreview"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
     android:background="@drawable/devicerow_state_border_selector"
     android:layout_margin="2dp">
-
-    <FrameLayout
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center">
         <com.google.android.material.imageview.ShapeableImageView
             xmlns:app="http://schemas.android.com/apk/res-auto"
             android:id="@+id/snapshotPreview"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="center"
             android:contentDescription="@string/device_preview_snapshot_contentdesc"
             android:adjustViewBounds="true"
             android:padding="@dimen/smallerBorderSize"
             app:shapeAppearanceOverlay="@style/ShapeAppearance.Imageview.Rounded"
             android:scaleType="fitXY" />
-        <LinearLayout
-            android:id="@+id/devpreview_scope_layout"
+        <TextView
+            android:id="@+id/deviceError"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="@drawable/devicerow_state_border_selector"
-            android:alpha="0.5"
-            android:padding="8dp"
-            android:visibility="gone"
-            android:layout_margin="6dp">
-            <TextView
-                android:id="@+id/device_name"
-                android:textColor="@drawable/devicerow_state_color_selector"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:singleLine="true"
-                android:ellipsize="end"
-                android:textSize="@dimen/previewTitleSize"/>
-            <TextView
-                android:id="@+id/device_hw"
-                android:textColor="@drawable/devicerow_state_color_selector"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:singleLine="true"
-                android:ellipsize="end"
-                android:textSize="@dimen/previewFontSize" />
-            <TextView
-                android:id="@+id/device_location"
-                android:textColor="@drawable/devicerow_state_color_selector"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:singleLine="true"
-                android:ellipsize="end"
-                android:textSize="@dimen/previewFontSize"/>
-        </LinearLayout>
+            android:visibility="gone" />
+    </LinearLayout>
+    <!-- Loading only visible when fetching snapshot -->
+    <LinearLayout
+        android:id="@+id/devpreview_snap_loading_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="end"
+        android:alpha="1"
+        android:layout_margin="@dimen/top_padding"
+        android:orientation="vertical"
+        android:visibility="gone">
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:indeterminate="true" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/device_preview_snapshot_loading_label" />
+    </LinearLayout>
 
-        <!-- Global preview loading overlay layout (initially hidden) -->
+    <!-- Device details transparent overlay  -->
+    <LinearLayout
+        android:id="@+id/devpreview_scope_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/devicerow_state_border_selector"
+        android:alpha="0.5"
+        android:padding="8dp"
+        android:visibility="gone"
+        android:layout_margin="6dp">
+        <!-- Loading visible when details are loading -->
         <LinearLayout
-            android:id="@+id/devpreview_loading_overlay"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:id="@+id/devpreview_scope_loading_overlay"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:gravity="center"
             android:alpha="1"
-            android:layout_margin="@dimen/top_padding"
             android:orientation="vertical"
-            android:visibility="visible">
+            android:visibility="gone">
             <ProgressBar
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -77,7 +75,56 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/device_preview_loading_label" />
+                android:text="@string/device_preview_snapshot_loading_label" />
         </LinearLayout>
-    </FrameLayout>
+
+        <!-- Details details -->
+        <TextView
+            android:id="@+id/device_name"
+            android:textColor="@drawable/devicerow_state_color_selector"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:textSize="@dimen/previewTitleSize"/>
+        <TextView
+            android:id="@+id/device_hw"
+            android:textColor="@drawable/devicerow_state_color_selector"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:textSize="@dimen/previewFontSize" />
+        <TextView
+            android:id="@+id/device_location"
+            android:textColor="@drawable/devicerow_state_color_selector"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:textSize="@dimen/previewFontSize"/>
+    </LinearLayout>
+
+    <!-- Global loading while device is authenticating -->
+    <LinearLayout
+        android:id="@+id/devpreview_loading_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:alpha="1"
+        android:layout_margin="@dimen/top_padding"
+        android:orientation="vertical"
+        android:visibility="visible">
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:indeterminate="true" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/device_preview_loading_label" />
+    </LinearLayout>
 </net.quedale.andronvif.list.DevicePreview>

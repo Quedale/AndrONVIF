@@ -5,7 +5,6 @@ import android.graphics.BitmapFactory;
 import android.util.Log;
 
 import java.io.Serializable;
-import java.net.ConnectException;
 import java.nio.ByteBuffer;
 
 import dalvik.annotation.optimization.FastNative;
@@ -16,7 +15,7 @@ public class AndrONVIFSnapshot extends JNISoapObject implements Serializable {
 
     private transient Bitmap bitmap;
 
-    protected AndrONVIFSnapshot(long pointer) throws ConnectException, SoapInvalidDeviceException, SoapUnauthorizedException, SoapActionNotSupportedException, SoapUnexpectedException {
+    protected AndrONVIFSnapshot(long pointer) throws SoapConnectionException, SoapInvalidDeviceException, SoapUnauthorizedException, SoapActionNotSupportedException, SoapUnexpectedException {
         super(pointer,true);
         ByteBuffer buffer = getNativeBuffer(this.pointer_address);
         byte[] imageBytes = new byte[buffer.remaining()];

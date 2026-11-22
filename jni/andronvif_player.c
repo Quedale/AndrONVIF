@@ -34,7 +34,7 @@ typedef struct {
     jobject java_object;    /* Parent java object */
     OnvifDevice * device;   /* ONVIF device to playe */
     int selected_profile;
-
+    int muted;
     //Gstreamer related elements
     GstElement *pipeline;   /* The running pipeline */
     GstElement *video_sink; /* The video sink element which receives VideoOverlay commands */
@@ -332,7 +332,7 @@ AndrONVIFPlayer__create_video_pad(){
 }
 
 static GstElement *
-AndrONVIFPlayer__create_audio_pad(){
+AndrONVIFPlayer__create_audio_pad(int muted){
     GstPad *pad, *ghostpad;
     GstElement *decoder, *volume, *level, *sink, *audio_bin;
 
@@ -355,6 +355,8 @@ AndrONVIFPlayer__create_audio_pad(){
         C_ERROR ("One of the audio elements wasn't created. audiobin[%d] decoder[%d] level[%d] sink[%d]",!audio_bin, !decoder, !level, !sink);
         return NULL;
     }
+
+    gst_stream_volume_set_mute(GST_STREAM_VOLUME(volume),muted);
 
     // Add Elements to the Bin
     gst_bin_add_many (GST_BIN (audio_bin),
@@ -413,7 +415,7 @@ AndrONVIFPlayer__on_rtsp_pad_added(GstElement *element, GstPad *new_pad, AndrONV
     if (!strcmp(media_type,"video")) {
         new_bin = AndrONVIFPlayer__create_video_pad();
     } else if (!strcmp(media_type,"audio")) {
-        new_bin = AndrONVIFPlayer__create_audio_pad();
+        new_bin = AndrONVIFPlayer__create_audio_pad(priv->muted);
     } else {
         C_ERROR("Unexpected caps received %s",name);
     }
@@ -817,6 +819,7 @@ AndrONVIFPlayer__init(AndrONVIFPlayer* self) {
     priv->context = NULL;
     priv->main_loop = NULL;
     priv->java_object = NULL;
+    priv->muted = FALSE;
     pthread_create (&priv->main_thread, NULL, &mainloop_function, self);
 }
 
@@ -885,14 +888,8 @@ AndrONVIFPlayer__toggleMute(jlong pointer) {
     AndrONVIFPlayerPrivate *priv = AndrONVIFPlayer__get_instance_private (self);
 
     GstElement *volume = gst_bin_get_by_name(GST_BIN(priv->pipeline), "volume");
-    gboolean muted = gst_stream_volume_get_mute(GST_STREAM_VOLUME(volume));
-    if(muted){
-        gst_stream_volume_set_mute(GST_STREAM_VOLUME(volume),false);
-        return false;
-    } else {
-        gst_stream_volume_set_mute(GST_STREAM_VOLUME(volume),true);
-        return true;
-    }
+    gst_stream_volume_set_mute(GST_STREAM_VOLUME(volume),!priv->muted);
+    return priv->muted = !priv->muted;
 }
 
 static JNIEXPORT void JNICALL

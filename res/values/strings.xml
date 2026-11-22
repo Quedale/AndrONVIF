@@ -12,10 +12,12 @@
     <string name="device_discovery_add_contentdesc">Manually add a new device</string>
     
     <string name="device_preview_snapshot_contentdesc">A onvif snapshot preview</string>
-    <string name="device_preview_loading_label">Authenticating...</string>
+    <string name="device_preview_loading_label">Authenticating…</string>
+    <string name="device_preview_scope_loading_label">Fetching\nScopes…</string>
+    <string name="device_preview_snapshot_loading_label">Fetching\nSnapshot…</string>
     <string name="onvif_profile_selection_label">Profile Selection</string>
     <string name="add_device_fragment_label">Add Device</string>
-    <string name="add_device_loading_label">Please wait...</string>
+    <string name="add_device_loading_label">Please wait…</string>
     <string name="add_device_no_device_found">No ONVIF device found on network.</string>
     <string name="add_device_cancel_contentdesc">Cancel manual wizard</string>
     <string name="add_device_add_contentdesc">Add configured device</string>
@@ -31,4 +33,7 @@
     <string name="profile_name_lbl">"Name  : %s"</string>
     <string name="profile_token_label">"Token : %s"</string>
     <string name="onvif_profile_selection_desc">ONVIF Profile Selection</string>
+    <string name="failed_to_connect_error_msg">Failed to connect.</string>
+    <string name="unauthorized_error_msg">Unauthorized.</string>
+    <string name="unexpected_error_occured_error_msg">Unexpected error occured.</string>
 </resources>

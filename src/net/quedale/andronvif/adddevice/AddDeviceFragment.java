@@ -1,6 +1,6 @@
 package net.quedale.andronvif.adddevice;
 
-import static android.view.View.INVISIBLE;
+import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
 
 import android.os.Bundle;
@@ -105,16 +105,19 @@ public class AddDeviceFragment extends Fragment {
                     binding.loadingOverlay.setVisibility(VISIBLE);
                     break;
                 case ERROR_CONNECTION_FAILED:
+                    binding.loadingOverlay.setVisibility(GONE);
                     AddDeviceFragment.this.showErrorAlert("Unable to connect.");
                     break;
                 case ERROR_UNAUTHORIZED:
+                    binding.loadingOverlay.setVisibility(GONE);
                     AddDeviceFragment.this.showErrorAlert("Unauthorized.");
                     break;
                 case ERROR_UNEXPECTED:
+                    binding.loadingOverlay.setVisibility(GONE);
                     AddDeviceFragment.this.showErrorAlert("An unexpected error occured.");
                     break;
                 case DONE:
-                    binding.loadingOverlay.setVisibility(INVISIBLE);
+                    binding.loadingOverlay.setVisibility(GONE);
                     activity_model.addDevice(Objects.requireNonNull(model.getDevice()));
                     activity_model.setSelectedDevice(model.getDevice());
                     NavHostFragment.findNavController(AddDeviceFragment.this).navigate(R.id.action_AddDeviceFragment_to_PlayerFragment);

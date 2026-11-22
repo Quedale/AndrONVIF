@@ -2,25 +2,16 @@ package net.quedale.andronvif.jni;
 
 import android.util.Log;
 
-import androidx.annotation.MainThread;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Observer;
 
 import org.jspecify.annotations.NonNull;
 
-import java.net.ConnectException;
-
 import dalvik.annotation.optimization.CriticalNative;
 import dalvik.annotation.optimization.FastNative;
 
 public class AndrONVIFDevice extends JNIObject {
-    public static final int STATE_AUTHENTICATED_MASK = 1;
-    public static final int STATE_SCOPE_MASK = 2;
-    public static final int STATE_SNAP_MASK = 4;
-
-    private transient final MutableLiveData<Integer> stateflags = new MutableLiveData<>();
-
     @FastNative //Can't be CriticalNative because of String parameter
     private static native long nativeNew(String url);
     @FastNative //Can't be CriticalNative because of String return value
@@ -35,17 +26,18 @@ public class AndrONVIFDevice extends JNIObject {
     private static native int authenticate(long pointer);
     //Not FastNative because of slow IO calls
     private static native long fetchScopes(long pointer);
-
+    //Not FastNative because of slow IO calls
     private static native long fetchProfiles(long pointer);
-
     //Not FastNative because of slow IO calls
     private static native long fetchSnapshot(long pointer, int profile_index);
 
+    private transient final MutableLiveData<Boolean> authenticated = new MutableLiveData<>();
+    private final MutableLiveData<AndrONVIFDeviceDetails> details = new MutableLiveData<>();
+    private final MutableLiveData<AndrONVIFSnapshot> snapshot = new MutableLiveData<>();
+    private transient final MutableLiveData<JNISoapObject.SoapException> scope_exception = new MutableLiveData<>();
+    private transient final MutableLiveData<JNISoapObject.SoapException> snap_exception = new MutableLiveData<>();
+    private transient final MutableLiveData<JNISoapObject.SoapException> auth_exception = new MutableLiveData<>();
     private final String url;
-    private String location = null;
-    private String hardware = null;
-    private String name = null;
-    private AndrONVIFSnapshot snapshot = null;
     private AndrONVIFMediaProfiles profiles = null;
     private final MutableLiveData<AndrONVIFMediaProfiles.AndrONVIFProfile> selected_profile = new MutableLiveData<>();
 
@@ -57,22 +49,28 @@ public class AndrONVIFDevice extends JNIObject {
     public AndrONVIFDevice(DiscoveryMatch match) {
         super(nativeNew(match.getAddressAt(0))); //TODO support multiple address
         this.url = match.getAddressAt(0);
-        this.name = match.getScopeValue("name");
-        this.location = match.getScopeValue("location");
-        this.hardware = match.getScopeValue("hardware");
+        this.details.postValue(new AndrONVIFDeviceDetails(match.getScopeValue("name"), match.getScopeValue("location"), match.getScopeValue("hardware")));
     }
 
-    public void observeStateFlags(@org.jspecify.annotations.NonNull LifecycleOwner owner, @NonNull Observer<? super Integer> observer){
-        stateflags.observe(owner, observer);
-    }
-
-    public void authenticate() throws ConnectException, JNISoapObject.SoapUnexpectedException, JNISoapObject.SoapActionNotSupportedException, JNISoapObject.SoapUnauthorizedException, JNISoapObject.SoapInvalidDeviceException {
-        Integer val = stateflags.getValue();
-        if(val != null && (val & AndrONVIFDevice.STATE_AUTHENTICATED_MASK) != 0){
+    public void authenticate() throws JNISoapObject.SoapInvalidDeviceException, JNISoapObject.SoapConnectionException, JNISoapObject.SoapActionNotSupportedException, JNISoapObject.SoapUnauthorizedException, JNISoapObject.SoapUnexpectedException {
+        Boolean isAuth = authenticated.getValue();
+        if(isAuth != null && isAuth){
             Log.d("AndrONVIFDevice","Device already authenticated.");
             return;
         }
-        JNISoapObject.handleSoapException(AndrONVIFDevice.authenticate(this.pointer_address));
+        try {
+            JNISoapObject.handleSoapException(AndrONVIFDevice.authenticate(this.pointer_address));
+            auth_exception.postValue(null);
+            authenticated.postValue(true);
+        } catch (JNISoapObject.SoapException e){
+            auth_exception.postValue(e);
+            throw e;
+        }
+    }
+
+    public boolean isAuthenticated(){
+        Boolean isAuth = authenticated.getValue();
+        return isAuth != null && isAuth;
     }
 
     public void setCredentials(String username, String password){
@@ -80,10 +78,10 @@ public class AndrONVIFDevice extends JNIObject {
     }
 
     public AndrONVIFSnapshot getSnapshot(){
-        return this.snapshot;
+        return this.snapshot.getValue();
     }
 
-    public AndrONVIFMediaProfiles fetchProfiles() throws JNISoapObject.SoapInvalidDeviceException, JNISoapObject.SoapActionNotSupportedException, JNISoapObject.SoapUnauthorizedException, JNISoapObject.SoapUnexpectedException, ConnectException {
+    public AndrONVIFMediaProfiles fetchProfiles() throws JNISoapObject.SoapException {
         if(profiles != null){
             profiles = null;
         }
@@ -92,14 +90,19 @@ public class AndrONVIFDevice extends JNIObject {
         return profiles;
     }
 
-    public AndrONVIFSnapshot fetchSnapshot() throws JNISoapObject.SoapInvalidDeviceException, JNISoapObject.SoapActionNotSupportedException, JNISoapObject.SoapUnauthorizedException, JNISoapObject.SoapUnexpectedException, ConnectException {
+    public void fetchSnapshot() {
         //TODO Handling multiple profiles
-        if(snapshot != null){
-            snapshot.unref();
-            this.snapshot = null;
+        AndrONVIFSnapshot oldsnap = this.snapshot.getValue();
+        if(oldsnap != null){
+            oldsnap.unref();
         }
-        this.snapshot = new AndrONVIFSnapshot(fetchSnapshot(this.pointer_address,0));
-        return this.snapshot;
+        try {
+            AndrONVIFSnapshot snap = new AndrONVIFSnapshot(fetchSnapshot(this.pointer_address, 0));
+            this.snap_exception.postValue(null);
+            this.snapshot.postValue(snap);
+        } catch (JNISoapObject.SoapException e){
+            this.snap_exception.postValue(e);
+        }
     }
 
     public int getPort(){
@@ -118,33 +121,20 @@ public class AndrONVIFDevice extends JNIObject {
         return this.url;
     }
 
-    public String getName(){
+    public AndrONVIFDeviceDetails getDetails(){
         //TODO fetch name if null
-        return this.name;
+        return this.details.getValue();
     }
 
-    public String getLocation(){
-        //TODO fetch location if null
-        return this.location;
-    }
-
-    public String getHardware(){
-        return this.hardware;
-    }
-
-    @MainThread
-    public void setState(int state){
-        if(stateflags.getValue() != null){
-            state = state + stateflags.getValue();
+    public void fetchScopes() {
+        try{
+            AndrONVIFScopes scopes = new AndrONVIFScopes(fetchScopes(this.pointer_address));
+            AndrONVIFDeviceDetails details = new AndrONVIFDeviceDetails(scopes.extractScope("name"), scopes.extractScope("location"), scopes.extractScope("hardware"));
+            this.scope_exception.postValue(null);
+            this.details.postValue(details);
+        } catch (JNISoapObject.SoapException e){
+            this.scope_exception.postValue(e);
         }
-        stateflags.setValue(state);
-    }
-
-    public void fetchScopes() throws JNISoapObject.SoapInvalidDeviceException, JNISoapObject.SoapActionNotSupportedException, JNISoapObject.SoapUnauthorizedException, JNISoapObject.SoapUnexpectedException, ConnectException {
-        AndrONVIFScopes scopes = new AndrONVIFScopes(fetchScopes(this.pointer_address));
-        this.name = scopes.extractScope("name");
-        this.hardware = scopes.extractScope("hardware");
-        this.location = scopes.extractScope("location");
     }
 
     @Override
@@ -162,9 +152,10 @@ public class AndrONVIFDevice extends JNIObject {
 
     @Override
     public void destroyed(){
-        if(this.snapshot != null){
-            this.snapshot.unref();
-            this.snapshot = null;
+        AndrONVIFSnapshot oldsnap = this.snapshot.getValue();
+        if(oldsnap != null){
+            this.snapshot.postValue(null);
+            oldsnap.unref();
         }
     }
 
@@ -178,5 +169,52 @@ public class AndrONVIFDevice extends JNIObject {
 
     public void observeSelectedProfile(LifecycleOwner owner, Observer<AndrONVIFMediaProfiles.AndrONVIFProfile> observer) {
         selected_profile.observe(owner, observer);
+    }
+
+    public void observeAuthentication(@org.jspecify.annotations.NonNull LifecycleOwner owner, @NonNull Observer<Boolean> observer){
+        authenticated.observe(owner, observer);
+    }
+
+    public void observeDetails(LifecycleOwner owner, Observer<AndrONVIFDeviceDetails> observer) {
+        details.observe(owner, observer);
+    }
+
+    public void observeSnapshot(LifecycleOwner owner, Observer<AndrONVIFSnapshot> observer) {
+        snapshot.observe(owner, observer);
+    }
+
+    public void observeSnapshotException(@org.jspecify.annotations.NonNull LifecycleOwner owner, @NonNull Observer<JNISoapObject.SoapException> observer){
+        snap_exception.observe(owner, observer);
+    }
+
+    public void observeScopeException(@org.jspecify.annotations.NonNull LifecycleOwner owner, @NonNull Observer<JNISoapObject.SoapException> observer){
+        scope_exception.observe(owner, observer);
+    }
+
+    public void observeAuthException(@org.jspecify.annotations.NonNull LifecycleOwner owner, @NonNull Observer<JNISoapObject.SoapException> observer){
+        auth_exception.observe(owner, observer);
+    }
+
+    public static class AndrONVIFDeviceDetails {
+        private final String location;
+        private final String hardware;
+        private final String name;
+        private AndrONVIFDeviceDetails(String name, String location, String hardware){
+            this.name = name;
+            this.hardware = hardware;
+            this.location = location;
+        }
+
+        public String getName(){
+            return name;
+        }
+
+        public String getLocation(){
+            return location;
+        }
+
+        public String getHardware(){
+            return hardware;
+        }
     }
 }

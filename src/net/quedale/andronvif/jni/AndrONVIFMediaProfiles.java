@@ -1,7 +1,5 @@
 package net.quedale.andronvif.jni;
 
-import java.net.ConnectException;
-
 import dalvik.annotation.optimization.CriticalNative;
 import dalvik.annotation.optimization.FastNative;
 public class AndrONVIFMediaProfiles extends JNISoapObject {
@@ -19,7 +17,7 @@ public class AndrONVIFMediaProfiles extends JNISoapObject {
         return new AndrONVIFProfile(nativeGetProfileAt(this.pointer_address,index));
     }
 
-    protected AndrONVIFMediaProfiles(long pointer) throws SoapInvalidDeviceException, SoapActionNotSupportedException, SoapUnauthorizedException, SoapUnexpectedException, ConnectException {
+    protected AndrONVIFMediaProfiles(long pointer) throws JNISoapObject.SoapException {
         super(pointer,false);
     }
 

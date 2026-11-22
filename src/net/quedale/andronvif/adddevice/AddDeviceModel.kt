@@ -11,7 +11,6 @@ import net.quedale.andronvif.db.DBDevice
 import net.quedale.andronvif.jni.AndrONVIFDevice
 import net.quedale.andronvif.jni.JNISoapObject
 import net.quedale.andronvif.utils.AbstractModel
-import java.net.ConnectException
 
 class AddDeviceModel(application: Application) : AbstractModel<AddDeviceModel.State>(application) {
     enum class State {
@@ -121,7 +120,7 @@ class AddDeviceModel(application: Application) : AbstractModel<AddDeviceModel.St
                 db.close()
 
                 setState(State.DONE)
-            } catch (_: ConnectException) {
+            } catch (_: JNISoapObject.SoapConnectionException) {
                 if(tempDevice != device) tempDevice.unref()
                 setState(State.ERROR_CONNECTION_FAILED)
             } catch (_: JNISoapObject.SoapUnexpectedException) {
